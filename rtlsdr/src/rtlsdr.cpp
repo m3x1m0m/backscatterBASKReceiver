@@ -7,9 +7,11 @@
 //============================================================================
 
 #include <iostream>
+#ifndef _WIN32
 #include <stdio.h>
 #include <cstdio>
 #include <stdlib.h>
+#endif
 #include "convenience/convenience.h"
 #include "rtl-sdr.h"
 
