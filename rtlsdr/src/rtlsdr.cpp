@@ -7,7 +7,9 @@
 //============================================================================
 
 #include <iostream>
-
+#include <stdio.h>
+#include <cstdio>
+#include <stdlib.h>
 #include "convenience/convenience.h"
 #include "rtl-sdr.h"
 
