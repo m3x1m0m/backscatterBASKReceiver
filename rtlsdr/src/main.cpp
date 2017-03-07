@@ -12,8 +12,7 @@
 using namespace std;
 
 int main() {
-
-	CDemodulator MyDemodulator(1.8e6,105.6e6,400);
+	CDemodulator MyDemodulator(1.8e6,626e6,20);
 	MyDemodulator.continuousReadout();
 	return 0;
 }

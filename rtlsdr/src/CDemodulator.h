@@ -17,20 +17,29 @@
 
 using namespace std;
 
-//-------------------------------------Libraries-------------------------------------------------------------------------------
+//-------------------------------------Defines---------------------------------------------------------------------------------
 
-#define DEFAULT_BUF_LENGTH	(16 * 16384)
-#define MINIMAL_BUF_LENGTH	512
-#define MAXIMAL_BUF_LENGTH	(256 * 16384)
+#define MY_BUFFER_LENGTH (2*1024)					// 2 Bytes per sample (I,Q)
+
+//-------------------------------------Typedefs---------------------------------------------------------------------------------
+
+typedef uint64_t myfixedpt64_t;						// Fixed point number 64 bit
+typedef struct cmplsampfl_t{						// Complex sample as float
+		float out_real;
+		float out_imag;
+}cmplsampfl_t;
 
 //-------------------------------------CDemodulator----------------------------------------------------------------------------
 class CDemodulator
 {
 private:
-	rtlsdr_dev_t *dev;		// Device handle
+	rtlsdr_dev_t *dev;							// Device handle
 public:
 	CDemodulator(unsigned int samp_rate,unsigned int frequency,unsigned int gain);
 	void continuousReadout();
+	cmplsampfl_t convertSample(uint8_t in_real, uint8_t in_imag, bool debug);
+	void showADCData(uint8_t in_real, uint8_t in_imag);
+	void dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer,uint32_t buffer_length);
 };
 
 #endif
