@@ -55,7 +55,13 @@ void CDemodulator::continuousReadout(){
 	// Action
 	verbose_reset_buffer(dev);											// Empty HW buffer
 
-	while (whileLoop) {
+	cout << "Buffer size: " << buffer_length << " byte" << endl;
+	cout << "Starting to read." << endl;
+
+	resetFile("raw.csv");
+	resetFile("filtered.csv");
+
+	while (whileLoop){
 		r = rtlsdr_read_sync(dev, intBuffer, buffer_length, &n_read);	// Perform readout
 		if (r < 0) {
 			fprintf(stderr, "WARNING: sync read failed.\n");
@@ -68,9 +74,10 @@ void CDemodulator::continuousReadout(){
 			i+=2;
 			j++;
 		}
-		whileLoop=false;
+		dumpFloats2File((char*)"raw.csv",floatBuffer,buffer_length/2);
+		rectFilter(floatBuffer,buffer_length/2,(char*)"coefficients.csv");
+		dumpFloats2File((char*)"filtered.csv",floatBuffer,buffer_length/2);
 	}
-	dumpFloats2File((char*)"test.csv",floatBuffer,buffer_length/2);
 	delete intBuffer;
 	delete floatBuffer;
 }
@@ -78,11 +85,11 @@ void CDemodulator::continuousReadout(){
 //-------------------------------------convertSample---------------------------------------------------------------------------
 cmplsampfl_t CDemodulator::convertSample(uint8_t in_real, uint8_t in_imag, bool debug){
 	cmplsampfl_t oneSample;
-	oneSample.out_real = ( (float) in_real)-127.5;						// First byte is from the in phase ADC
-	oneSample.out_imag = ( (float) in_imag)-127.5;						// Second byte is from the quadrature ADC acc. to the internet
+	oneSample.real = ( (float) in_real)-127.5;						// First byte is from the in phase ADC
+	oneSample.imag = ( (float) in_imag)-127.5;						// Second byte is from the quadrature ADC acc. to the internet
 	if(debug){
-		cout << "Real (Float): " << oneSample.out_real << "\n";
-		cout << "Imaginary (Float): " << oneSample.out_real << "\n";
+		cout << "Real (Float): " << oneSample.real << "\n";
+		cout << "Imaginary (Float): " << oneSample.real << "\n";
 	}
 	return oneSample;
 }
@@ -93,19 +100,80 @@ void CDemodulator::showADCData(uint8_t in_real, uint8_t in_imag){
 	cout << "Imaginary (ADC): " << ((int)in_imag) << "\n";				// Second byte is from the quadrature ADC acc. to the internet
 }
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
-void CDemodulator::dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer,uint32_t buffer_length){
+void CDemodulator::dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer, uint32_t buffer_length){
 	// Variables
 	ofstream myfile;
 	uint32_t i = 0;
 
 	//Action
-	 myfile.open (filename);
-	 i = 0;
-	 while(i < buffer_length){
-		 myfile << floatBuffer[i].out_real << "," << floatBuffer[i].out_imag << endl;
-		 i++;
-	 }
+	myfile.open (filename, ios::app);
+	i = 0;
+	while(i < buffer_length){
+		myfile << floatBuffer[i].real << "," << floatBuffer[i].imag << endl;
+		i++;
+	}
+	myfile.close();
+}
+//-------------------------------------resetFile------------------------------------------------------------------------------
+void CDemodulator::resetFile(char *filename){
+	// Variables
+	ofstream myfile;
+
+	//Action
+	 myfile.open (filename, ios::out);
+	 myfile << "";
 	 myfile.close();
+}
+//-------------------------------------resetFile------------------------------------------------------------------------------
+void CDemodulator::rectFilter(cmplsampfl_t *floatBuffer, uint32_t buffer_length,char *filename){
+	// Variables
+	int i = 0;
+	cmplsampfl_t y;
+	cmplsampfl_t *reg;
+	string line;
+	float *filterCoeff;
+	uint32_t num_taps = 0;
+
+	// Action
+	ifstream myfile (filename);
+	if (myfile.is_open())
+	{
+		while ( getline (myfile,line) )	num_taps++;
+		myfile.clear();
+		myfile.seekg(0, ios::beg);											// Put the file pointer back to the beginning
+		filterCoeff = new float[num_taps];
+		i = 0;
+		while ( getline (myfile,line) ){
+			filterCoeff[i] = atof(line.c_str());							// Convert string to float
+			i++;
+		}
+		myfile.close();
+
+		reg = new cmplsampfl_t[num_taps];									// Get some space for filter coefficients
+
+		for(uint32_t j=0; j<num_taps; j++){
+			reg[j].imag = 0.0; 												// Initialize the delay registers.
+			reg[j].real = 0.0;
+		}
+
+		for(uint32_t j=0; j<num_taps; j++)
+		{
+			for(uint32_t k=num_taps; k>1; k--)reg[k-1] = reg[k-2];			// Shift register values
+			reg[0] = floatBuffer[j];
+
+			y.real = 0.0;													// Produce new output
+			y.imag = 0.0;
+			for(uint32_t k=0; k<num_taps; k++){
+				y.real += filterCoeff[k] * reg[k].real;
+				y.imag += filterCoeff[k] * reg[k].imag;
+			}
+
+			floatBuffer[j].real = y.real;									// Save new output
+			floatBuffer[j].imag = y.imag;
+		}
+		delete reg;															// Clean after yourself
+	}
+	else cout << "Unable to open file.";
 }
 
 

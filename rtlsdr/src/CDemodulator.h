@@ -17,17 +17,16 @@
 
 using namespace std;
 
+//-------------------------------------Typedefs---------------------------------------------------------------------------------
+
+typedef struct cmplsampfl_t{						// Complex sample as float
+		float real;
+		float imag;
+}cmplsampfl_t;
+
 //-------------------------------------Defines---------------------------------------------------------------------------------
 
 #define MY_BUFFER_LENGTH (2*1024)					// 2 Bytes per sample (I,Q)
-
-//-------------------------------------Typedefs---------------------------------------------------------------------------------
-
-typedef uint64_t myfixedpt64_t;						// Fixed point number 64 bit
-typedef struct cmplsampfl_t{						// Complex sample as float
-		float out_real;
-		float out_imag;
-}cmplsampfl_t;
 
 //-------------------------------------CDemodulator----------------------------------------------------------------------------
 class CDemodulator
@@ -40,6 +39,8 @@ public:
 	cmplsampfl_t convertSample(uint8_t in_real, uint8_t in_imag, bool debug);
 	void showADCData(uint8_t in_real, uint8_t in_imag);
 	void dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer,uint32_t buffer_length);
+	void resetFile(char *filename);
+	void rectFilter(cmplsampfl_t *floatBuffer, uint32_t buffer_length,char *filename);
 };
 
 #endif
