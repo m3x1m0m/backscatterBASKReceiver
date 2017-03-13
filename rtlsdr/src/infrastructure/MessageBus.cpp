@@ -10,7 +10,8 @@
 namespace backscatter {
 namespace infrastructure {
 using namespace message;
-MessageBus::MessageBus() {
+MessageBus::MessageBus() :
+		running(true) {
 	// TODO Auto-generated constructor stub
 
 }
@@ -28,8 +29,15 @@ void MessageBus::addListener(listener::Listener* listener) {
 	listeners.push_back(listener);
 }
 
+void MessageBus::stop(void) {
+}
+
 MessageBus::~MessageBus() {
 	// TODO Auto-generated destructor stub
 }
+
+void MessageBus::runLoop(void) {
+}
+
 }
 } /* namespace backscatter */
