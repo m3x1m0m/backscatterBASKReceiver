@@ -12,20 +12,26 @@
 #include "listeners/Listener.h"
 #include <vector>
 #include <memory>
+#include <mutex>
+#include "Queue.h"
+
 namespace backscatter {
 namespace infrastructure {
 class MessageBus {
 public:
 	MessageBus();
-	void pushMessage(message::Message * message);
+	void pushMessage(std::shared_ptr<message::Message> message);
 	void addListener(listener::Listener * listener);
+	bool isRunning(void);
+	void runLoop(void);
 	void stop(void);
 	virtual ~MessageBus();
 private:
-	std::vector<std::unique_ptr<message::Message *>> messageBuffer;
+	std::mutex listenersMutex;
+	Queue<std::shared_ptr<message::Message>> messageQueue; /**< Outgoing queue for data */
 	std::vector<listener::Listener *> listeners;
-	void runLoop(void);
 	bool running;
+	volatile bool stopSignal;
 };
 }
 } /* namespace backscatter */
