@@ -13,6 +13,7 @@
 
 namespace backscatter {
 namespace infrastructure {
+using namespace message;
 namespace listener {
 
 
@@ -20,8 +21,8 @@ class Listener {
 public:
 	Listener();
 	void setSensitive(Sensitive sensitive);
-	bool isSensitive(message::Message * message);
-	virtual void receiveMessage(message::Message * message) = 0;
+	bool isSensitive(Message * message);
+	virtual void receiveMessage(Message * message) = 0;
 	virtual ~Listener();
 private:
 	Sensitive sensitive; /**< List containing all the incoming message id's the service is sensitive for*/

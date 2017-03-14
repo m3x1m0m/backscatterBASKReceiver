@@ -18,8 +18,8 @@ Listener::Listener() :
 void Listener::setSensitive(Sensitive sensitive) {
 	this->sensitive = sensitive;
 }
-bool Listener::isSensitive(message::Message* message) {
-	if (sensitive.isSensitiveFor(message::MessageTypes::get().getType(message)))
+bool Listener::isSensitive(Message* message) {
+	if (sensitive.isSensitiveFor(MessageTypes::get().getType(message)))
 		return true;
 	return false;
 }
