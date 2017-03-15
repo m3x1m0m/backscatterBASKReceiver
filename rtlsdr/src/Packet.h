@@ -9,6 +9,7 @@
 #define PACKET_H_
 #include <stdint.h>
 #include <vector>
+#include <stdlib.h>
 
 class Packet {
 public:
