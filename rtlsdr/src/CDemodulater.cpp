@@ -38,19 +38,31 @@ CDemodulator::CDemodulator(unsigned int samp_rate,unsigned int frequency,unsigne
 	}
 	verbose_set_sample_rate(dev, samp_rate);							// Set sampling rate
 	verbose_set_frequency(dev, frequency);								// Set frequency
-	verbose_gain_set(dev, gain);										// Set gain
+	if (gain == 0) {													// Set gain
+		verbose_auto_gain(dev);
+	} else {
+		gain = nearest_gain(dev, gain);
+		verbose_gain_set(dev, gain);
+	}
+}
+//-------------------------------------CDemodulator---------------------------------------------------------------------------
+void CDemodulator::rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx)
+{
+	if (ctx) {
+		cout << "Read data asynchronously." << endl;
+		cout << "Buffer Length:" << len << endl;
+
+	}
 }
 
 //-------------------------------------continuousReadout-----------------------------------------------------------------------
 void CDemodulator::continuousReadout(){
 	// Variables
 	bool whileLoop = true;
-	int n_read = 0;
 	int r = 0;
 	uint32_t buffer_length = MY_BUFFER_LENGTH;
 	uint8_t *intBuffer = new uint8_t [buffer_length];
 	cmplsampfl_t *floatBuffer = new cmplsampfl_t [buffer_length];
-	uint32_t i,j = 0;
 
 	// Action
 	verbose_reset_buffer(dev);											// Empty HW buffer
@@ -58,25 +70,15 @@ void CDemodulator::continuousReadout(){
 	cout << "Buffer size: " << buffer_length << " byte" << endl;
 	cout << "Starting to read." << endl;
 
-	resetFile("raw.csv");
-	resetFile("filtered.csv");
+	resetFile((char*)"raw.csv");
+	resetFile((char*)"filtered.csv");
+
+	r = rtlsdr_read_async(dev, rtlsdrCallback, (void *)1, 0,buffer_length);
+	if (r < 0) {
+				fprintf(stderr, "WARNING: async read failed.\n");
+	}
 
 	while (whileLoop){
-		r = rtlsdr_read_sync(dev, intBuffer, buffer_length, &n_read);	// Perform readout
-		if (r < 0) {
-			fprintf(stderr, "WARNING: sync read failed.\n");
-			break;
-		}
-		i = 0;
-		j = 0;
-		while(i < buffer_length){
-			floatBuffer[j] = convertSample(intBuffer[i],intBuffer[i+1],false);
-			i+=2;
-			j++;
-		}
-		dumpFloats2File((char*)"raw.csv",floatBuffer,buffer_length/2);
-		rectFilter(floatBuffer,buffer_length/2,(char*)"coefficients.csv");
-		dumpFloats2File((char*)"filtered.csv",floatBuffer,buffer_length/2);
 	}
 	delete intBuffer;
 	delete floatBuffer;
@@ -124,8 +126,8 @@ void CDemodulator::resetFile(char *filename){
 	 myfile << "";
 	 myfile.close();
 }
-//-------------------------------------resetFile------------------------------------------------------------------------------
-void CDemodulator::rectFilter(cmplsampfl_t *floatBuffer, uint32_t buffer_length,char *filename){
+//-------------------------------------filterFIR------------------------------------------------------------------------------
+void CDemodulator::filterFIR(cmplsampfl_t *floatBuffer, uint32_t buffer_length,char *filename){
 	// Variables
 	int i = 0;
 	cmplsampfl_t y;
@@ -174,6 +176,10 @@ void CDemodulator::rectFilter(cmplsampfl_t *floatBuffer, uint32_t buffer_length,
 		delete reg;															// Clean after yourself
 	}
 	else cout << "Unable to open file.";
+}
+
+void CDemodulator::schmittTrig(cmplsampfl_t *floatBuffer, uint8_t *resultBuffer){
+
 }
 
 

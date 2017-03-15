@@ -19,14 +19,14 @@ using namespace std;
 
 //-------------------------------------Typedefs---------------------------------------------------------------------------------
 
-typedef struct cmplsampfl_t{						// Complex sample as float
+typedef struct cmplsampfl_t{					// Complex sample as float
 		float real;
 		float imag;
 }cmplsampfl_t;
 
 //-------------------------------------Defines---------------------------------------------------------------------------------
 
-#define MY_BUFFER_LENGTH (2*1024)					// 2 Bytes per sample (I,Q)
+#define MY_BUFFER_LENGTH 100*(2*1024)			// 2 Bytes per sample (I,Q)
 
 //-------------------------------------CDemodulator----------------------------------------------------------------------------
 class CDemodulator
@@ -40,7 +40,9 @@ public:
 	void showADCData(uint8_t in_real, uint8_t in_imag);
 	void dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer,uint32_t buffer_length);
 	void resetFile(char *filename);
-	void rectFilter(cmplsampfl_t *floatBuffer, uint32_t buffer_length,char *filename);
+	void filterFIR(cmplsampfl_t *floatBuffer, uint32_t buffer_length,char *filename);
+	void schmittTrig(cmplsampfl_t *floatBuffer, uint8_t *resultBuffer);
+	static void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx);
 };
 
 #endif
