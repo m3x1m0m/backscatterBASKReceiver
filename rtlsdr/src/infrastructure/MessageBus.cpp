@@ -17,7 +17,7 @@ MessageBus::MessageBus() :
 
 }
 
-void MessageBus::pushMessage(std::shared_ptr<message::Message> message) {
+void MessageBus::pushMessage(message::Message * message) {
 	messageQueue.push(message);
 }
 
@@ -27,7 +27,6 @@ void MessageBus::addListener(listener::Listener* listener) {
 }
 
 void MessageBus::stop(void) {
-	messageQueue.purge();
 	stopSignal = true;
 }
 
@@ -44,7 +43,7 @@ bool MessageBus::isRunning(void) {
 void MessageBus::runLoop(void) {
 	running = true;
 	while (!stopSignal) {
-		std::shared_ptr<message::Message> message = messageQueue.pop();
+		message::Message * message = messageQueue.pop();
 		if (stopSignal) {
 			//If we stopped we should stop!
 			break;
@@ -54,10 +53,11 @@ void MessageBus::runLoop(void) {
 			break;
 		} else {
 			for (std::vector<listener::Listener *>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-				if ((*it)->isSensitive(message.get())) {
-					(*it)->receiveMessage(message.get());
+				if ((*it)->isSensitive(message)) {
+					(*it)->receiveMessage(message);
 				}
 			}
+			delete message;
 		}
 	}
 	running = false;

@@ -20,7 +20,7 @@ namespace infrastructure {
 class MessageBus {
 public:
 	MessageBus();
-	void pushMessage(std::shared_ptr<message::Message> message);
+	void pushMessage(message::Message * message);
 	void addListener(listener::Listener * listener);
 	bool isRunning(void);
 	void runLoop(void);
@@ -28,7 +28,7 @@ public:
 	virtual ~MessageBus();
 private:
 	std::mutex listenersMutex;
-	Queue<std::shared_ptr<message::Message>> messageQueue; /**< Outgoing queue for data */
+	Queue<message::Message *> messageQueue; /**< Outgoing queue for data */
 	std::vector<listener::Listener *> listeners;
 	bool running;
 	volatile bool stopSignal;
