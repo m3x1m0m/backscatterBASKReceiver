@@ -22,20 +22,20 @@ Packet::~Packet() {
 }
 
 void Packet::manchesterDecode(uint16_t * binString, size_t len) {
-	size_t l = len * 8;
 
-	for(int i = 0; i<len; i++){
-		uint8_t temp = 0;
-		for(int b = 16; b>0; b-=2){
-			if(binString[b] && !binString[b-1]){
-				temp++;
-			}else if(binString[b] && !binString[b-1]){
-				//zero
-			} else{
-				//end of packet?
-			}
-			temp<<=1;
-		}
-		byteData.push_back(temp);
-	}
+	int i = 0;
+    int j = 0;
+
+    while(i<len){
+        if (binString[i]==0 && binString[i+1] == 1){
+            byteData.push_back(0);
+        }
+        else if (binString[i]==1 && binString[i+1] == 0){
+            byteData.push_back(1);
+        }
+        else printf("Error\n");
+        i+=2;
+	    j++;
+    }
+
 }
