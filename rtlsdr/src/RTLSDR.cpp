@@ -54,50 +54,41 @@ RTLSDR::RTLSDR(unsigned int isamp_rate, unsigned int ifrequency,
 		verbose_gain_set(dev, gain);
 	}
 
+	verbose_reset_buffer(dev);								// Empty HW buffer
+
 	cout << "Initialization done." << endl;
 }
 //-------------------------------------Destructor-----------------------------------------------------------------------------
 RTLSDR::~RTLSDR() {
-	rtlsdr_cancel_async(dev);
-}
 
-//-------------------------------------Callback-------------------------------------------------------------------------------
-void RTLSDR::processCallback(unsigned char *buf, uint32_t len, void *ctx) {
-	//Variables
-	uint32_t i = 0;
-	RawSampMess *msg;
-	msg = new RawSampMess(samp_rate, MY_BUFFER_LENGTH);
-
-	//Action
-	while (i < len) {
-		msg->addSample(buf[i]);
-		i++;
-	}
-	msgBus->pushMessage(msg);
-	cout << "Pushed samples to bus." << endl;
-}
-
-//-------------------------------------Workaround4Callback--------------------------------------------------------------------
-void RTLSDR::rtlsdrCallback(unsigned char * buf, uint32_t len, void * ctx) {
-	RTLSDR * rtlsdr = (RTLSDR*) ctx;
-	rtlsdr->processCallback(buf, len, ctx);
 }
 
 //-------------------------------------continuousReadout----------------------------------------------------------------------
 void RTLSDR::continuousReadout() {
 	// Variables
 	int r = 0;
-	uint32_t buffer_length = MY_BUFFER_LENGTH;
+	int n_read = 0;
+	unsigned int len = MY_BUFFER_LENGTH;
+	uint8_t *buf = new uint8_t[MY_BUFFER_LENGTH];
+	unsigned int i = 0;
+	RawSampMess *msg;
 
 	// Action
-	verbose_reset_buffer(dev);								// Empty HW buffer
-
-	cout << "Buffer size: " << buffer_length << " byte" << endl;
+	cout << "Buffer size: " << MY_BUFFER_LENGTH << " byte" << endl;
 	cout << "Starting to read." << endl;
 	// Start async readout
-	r = rtlsdr_read_async(dev, rtlsdrCallback, this, 0, buffer_length);
+	//while(1){
+	r = rtlsdr_read_sync(dev, buf, len, &n_read);
 	if (r < 0) {
-		fprintf(stderr, "WARNING: async read failed.\n");
+		fprintf(stderr, "WARNING: sync read failed.\n");
 	}
+	msg = new RawSampMess(samp_rate, MY_BUFFER_LENGTH);
+	while (i < len) {
+			msg->addSample(buf[i]);
+			i++;
+		}
+		msgBus->pushMessage(msg);
+		cout << "Pushed samples to bus." << endl;
+	//}
 }
 } /* namespace backscatter */

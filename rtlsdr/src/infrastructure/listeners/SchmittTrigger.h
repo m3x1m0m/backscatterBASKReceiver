@@ -21,6 +21,8 @@ namespace listener{
 
 //-------------------------------------Defines--------------------------------------------------------------------------------
 #define MY_RAW_FILE (char*)"raw.csv"
+#define MY_FILTERED_FILE (char*)"filtered.csv"
+#define MY_COEFFICIENTS_FILE (char*)"coefficients.csv"
 
 //-------------------------------------Typedefs-------------------------------------------------------------------------------
 
@@ -37,9 +39,11 @@ public:
 	virtual ~SchmittTrigger();
 private:
 	cmplsampfl_t convertSample(uint8_t in_real, uint8_t in_imag, bool debug);
+	std::vector<float> filterCoefficients;
 	void showADCData(uint8_t in_real, uint8_t in_imag);
 	void dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer, unsigned int length);
-	cmplsampfl_t *floatBuffer;
+	void filterFIR(cmplsampfl_t *floatBuffer, unsigned int length);
+
 };
 
 }
