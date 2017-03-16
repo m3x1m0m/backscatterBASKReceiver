@@ -19,7 +19,7 @@ SampleMessage::SampleMessage(long sampleRate, size_t size) :
 }
 
 void SampleMessage::addSample(unsigned int sample) {
-	sampless[writeIndex] = 0;
+	sampless[writeIndex] = sample;
 	writeIndex++;
 }
 

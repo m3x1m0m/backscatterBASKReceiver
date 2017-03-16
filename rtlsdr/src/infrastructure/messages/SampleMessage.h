@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include "Message.h"
-
+#include <iostream>
 namespace backscatter {
 namespace infrastructure {
 namespace message {
