@@ -18,13 +18,26 @@ namespace message {
 class SampleMessage: public Message {
 public:
 	SampleMessage() :
-			writeIndex(0), readIndex(0), sampleRate(0), sampless(0) {
+			size(0), writeIndex(0), readIndex(0), sampleRate(0), sampless(0) {
 	}
 	SampleMessage(long sampleRate, size_t size);
 	void addSample(unsigned int sample);
+	bool hasSample(void) {
+		return readIndex < writeIndex;
+	}
 	unsigned int nextSample(void);
 	virtual ~SampleMessage();
+
+	long getSampleRate() const {
+		return sampleRate;
+	}
+
+	size_t getSize() const {
+		return size;
+	}
+
 private:
+	size_t size;
 	size_t writeIndex;
 	size_t readIndex;
 	long sampleRate;
