@@ -21,7 +21,7 @@ int main() {
 	using namespace backscatter::infrastructure::listener;
 	MessageBus *bus = new MessageBus();
 	RTLSDR myRTLSDR(1.2e6, 105.616e6, 400, bus);
-	SchmittTrigger *mySchmittTrigger = new SchmittTrigger(false);
+	SchmittTrigger *mySchmittTrigger = new SchmittTrigger(false,30.0);
 	bus->addListener(mySchmittTrigger);
 	thread t1(&MessageBus::runLoop, bus);
 	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);

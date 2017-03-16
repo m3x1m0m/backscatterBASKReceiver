@@ -1,15 +1,16 @@
 //----------------------------------------------------------------------------------------------------------------------------
 // Project:    	Backscatter BPSK Receiver
-// Name:		RawSampMess.h
+// Name:		ProcessedSampMess.cpp
 // Author:		Maximilian Stiefel
-// Date:		15.03.2017
+// Date:		16.03.2017
 //
 // Description:
 //
 //----------------------------------------------------------------------------------------------------------------------------
 
-#ifndef INFRASTRUCTURE_MESSAGES_RAWSAMPMESS_H_
-#define INFRASTRUCTURE_MESSAGES_RAWSAMPMESS_H_
+
+#ifndef INFRASTRUCTURE_MESSAGES_PROCESSEDSAMPMESS_H_
+#define INFRASTRUCTURE_MESSAGES_PROCESSEDSAMPMESS_H_
 
 #include <stdint.h>
 #include "Message.h"
@@ -18,28 +19,26 @@ namespace backscatter {
 namespace infrastructure {
 namespace message {
 
-class RawSampMess: public Message {
+class ProcessedSampMess: public Message {
 public:
-	RawSampMess() :
+	ProcessedSampMess() :
 			writeIndex(0), readIndex(0), sampleRate(0), samples(0), length(0)  {
 	}
-	RawSampMess(unsigned int isampleRate, unsigned int ilength);
-	void addSample(uint8_t sample) ;
+	ProcessedSampMess(unsigned int isampleRate, unsigned int ilength);
+	void addSample(unsigned int sample) ;
 	uint8_t removeSample(void);
-	virtual ~RawSampMess();
+	virtual ~ProcessedSampMess();
 	unsigned int getSize();
-	unsigned int getSampleRate(void);
-
 private:
 	unsigned int writeIndex;
 	unsigned int readIndex;
 	unsigned int sampleRate;
 	unsigned int length;
-	uint8_t* samples;
+	unsigned int *samples;
 };
 
 } /* namespace message */
 } /* namespace infrastructure */
 } /* namespace backscatter */
 
-#endif /* INFRASTRUCTURE_MESSAGES_RAWSAMPMESS_H_ */
+#endif /* INFRASTRUCTURE_MESSAGES_PROCESSEDSAMPMESS_H_ */

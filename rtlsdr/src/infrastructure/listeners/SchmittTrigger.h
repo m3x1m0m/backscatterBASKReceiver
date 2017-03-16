@@ -23,7 +23,7 @@ namespace listener{
 //-------------------------------------Defines--------------------------------------------------------------------------------
 #define MY_RAW_FILE (char*)"raw.csv"
 #define MY_FILTERED_FILE (char*)"filtered.csv"
-#define MY_BINARY_FILE (char*)"filtered.csv"
+#define MY_BINARY_FILE (char*)"binary.csv"
 #define MY_COEFFICIENTS_FILE (char*)"coefficients.csv"
 #define MY_DECIMATION_FACTOR 100					// Factor for downsampling of the stream which ends up in a file
 
@@ -37,7 +37,7 @@ typedef struct cmplsampfl_t{					// Complex sample as float
 //-------------------------------------SchmittTrigger-------------------------------------------------------------------------
 class SchmittTrigger: public Listener {
 public:
-	SchmittTrigger(bool idebug);
+	SchmittTrigger(bool idebug, float ithreshold);
 	virtual void receiveMessage(message::Message * message) override;
 	virtual ~SchmittTrigger();
 private:
@@ -52,6 +52,7 @@ private:
 
 	void showADCData(uint8_t in_real, uint8_t in_imag);
 	void dumpFloats2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length);
+	void dumpInts2File(std::ofstream &myfile, unsigned int *intBuffer, unsigned int length);
 	void filterFIR(cmplsampfl_t *floatBuffer, unsigned int length);
 	unsigned int trigger(cmplsampfl_t *floatBuffer);
 };

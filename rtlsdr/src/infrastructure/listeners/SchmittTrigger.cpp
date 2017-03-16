@@ -11,6 +11,7 @@
 //-------------------------------------Libraries------------------------------------------------------------------------------
 #include "SchmittTrigger.h"
 #include "../messages/RawSampMess.h"
+#include "../messages/ProcessedSampMess.h"
 #include "../messages/MessageTypes.h"
 #include <iostream>
 #include <fstream>
@@ -25,7 +26,7 @@ namespace infrastructure {
 namespace listener {
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
-SchmittTrigger::SchmittTrigger(bool idebug):Listener() {
+SchmittTrigger::SchmittTrigger(bool idebug, float ithreshold):Listener() {
 	//Variables
 	message::RawSampMess msg;
 	std::ifstream myfile (MY_COEFFICIENTS_FILE);
@@ -63,6 +64,8 @@ SchmittTrigger::SchmittTrigger(bool idebug):Listener() {
 	binaryFile.open(MY_BINARY_FILE, std::ios::out);
 
 	debug = idebug;
+	threshold = ithreshold;
+	std::cout << "Threshold: " << threshold << std::endl;
 }
 
 //-------------------------------------convertSample--------------------------------------------------------------------------
@@ -83,31 +86,39 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 	uint8_t real = 0;
 	uint8_t imag = 0;
 	unsigned int i = 0,j = 0;
-	RawSampMess *mess = NULL;
-	cmplsampfl_t *floatBuffer;
-	unsigned int mess_size = 0;
+	RawSampMess *msg_recv = NULL;
+	ProcessedSampMess *msg_2send = NULL;
+	cmplsampfl_t *floatBuffer = NULL;
+	unsigned int *intBuffer = NULL;
+	unsigned int msg_size = 0;
 	static unsigned int m = 0;
 
 	//Action
-	mess = (RawSampMess*) message;
-	mess_size= mess->getSize();
+	msg_recv = (RawSampMess*) message;
+	msg_size= msg_recv->getSize();
 
 	if(!debug){
-		floatBuffer = new cmplsampfl_t[mess_size];
-		while(i<mess_size){
-			real=mess->removeSample();
-			imag=mess->removeSample();
+		floatBuffer = new cmplsampfl_t[msg_size];
+		intBuffer = new unsigned int[msg_size];
+		while(i<msg_size){
+			real=msg_recv->removeSample();
+			imag=msg_recv->removeSample();
 			floatBuffer[j] = convertSample(real,imag,false);						// Convert sample
 			i+=2;
 			j++;
 		}
-		std::cout << "Message Nu.:" << ++m << std::endl;
-		dumpFloats2File(rawFile,floatBuffer,mess_size/2);							// Save raw data
-		filterFIR(floatBuffer,mess_size/2);											// Filter
-		dumpFloats2File(filteredFile,floatBuffer,mess_size/2);						// Save filtered data
-		for(unsigned int m=0;m<mess_size/2;m++){
-			floatBuffer[m] = trigger(&floatBuffer[m]);
+
+		dumpFloats2File(rawFile,floatBuffer,msg_size/2);							// Save raw data
+		filterFIR(floatBuffer,msg_size/2);											// Filter
+		dumpFloats2File(filteredFile,floatBuffer,msg_size/2);						// Save filtered data
+
+		msg_2send = new ProcessedSampMess(msg_recv->getSampleRate(), msg_size);
+		for(unsigned int m=0;m<msg_size/2;m++){
+			intBuffer[m] = trigger(&floatBuffer[m]);
+			msg_2send->addSample(intBuffer[m]);
 		}
+		dumpInts2File(binaryFile,intBuffer,msg_size/2);
+		std::cout << "Message nu.:" << ++m << std::endl;
 	} else{
 		floatBuffer = new cmplsampfl_t[num_taps];
 		while(i<num_taps){
@@ -119,7 +130,7 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 					}
 					i++;
 				}
-		std::cout << "Debug Mode! Message Nu.:" << ++m << std::endl << num_taps << std::endl;
+		std::cout << "Debug Mode! Message nu.:" << ++m << std::endl << num_taps << std::endl;
 		if(m<=1){
 			dumpFloats2File(rawFile,floatBuffer,num_taps);								// Save raw data
 			filterFIR(floatBuffer,num_taps);											// Filter
@@ -139,6 +150,25 @@ void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, cmplsampfl_t *floatB
 		i = 0;
 		while(i < length){
 			myfile << floatBuffer[i].real << "," << floatBuffer[i].imag << std::endl;
+			if(!debug)
+				i+=MY_DECIMATION_FACTOR;									// Downsampling here necessary
+			else
+				i++;
+		}
+	} else
+		std::cout << "File " << myfile << " is not opened." << std::endl;
+}
+
+//-------------------------------------dumpData2File---------------------------------------------------------------------------
+void SchmittTrigger::dumpInts2File(std::ofstream &myfile, unsigned int *intBuffer, unsigned int length){
+	// Variables
+	unsigned int i = 0;
+
+	//Action
+	if(myfile.is_open()){
+		i = 0;
+		while(i < length){
+			myfile << intBuffer[i] << std::endl;
 			if(!debug)
 				i+=MY_DECIMATION_FACTOR;									// Downsampling here necessary
 			else
@@ -195,10 +225,12 @@ unsigned int SchmittTrigger::trigger(cmplsampfl_t *floatBuffer){
 	// Variables
 
 	// Action
-	if(threshold>sqrt(floatBuffer->real^2))
+	if( threshold < sqrt( (floatBuffer->real)*(floatBuffer->real) ) )
 		return 1;
 	else
 		return 0;
 }
+
+} /* namespace listener */
 } /* namespace infrastructure */
 } /* namespace backscatter */

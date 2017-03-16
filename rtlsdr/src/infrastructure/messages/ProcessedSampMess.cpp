@@ -1,15 +1,15 @@
 //----------------------------------------------------------------------------------------------------------------------------
 // Project:    	Backscatter BPSK Receiver
-// Name:		RawSampMess.cpp
+// Name:		ProcessedSampMess.cpp
 // Author:		Maximilian Stiefel
-// Date:		15.03.2017
+// Date:		16.03.2017
 //
 // Description:
 //
 //----------------------------------------------------------------------------------------------------------------------------
 
 //-------------------------------------Libraries------------------------------------------------------------------------------
-#include "RawSampMess.h"
+#include "ProcessedSampMess.h"
 #include <iostream>
 #include <typeinfo>
 
@@ -18,37 +18,32 @@ namespace infrastructure {
 namespace message {
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
-RawSampMess::RawSampMess(unsigned int isampleRate, unsigned int ilength) :
+ProcessedSampMess::ProcessedSampMess(unsigned int isampleRate, unsigned int ilength) :
 		readIndex(0), writeIndex(0) {
-	this->samples = new uint8_t[ilength];
+	this->samples = new unsigned int[ilength];
 	this->sampleRate = isampleRate;
 	this->length = ilength;
 }
 
 //-------------------------------------addSample------------------------------------------------------------------------------
-void RawSampMess::addSample(uint8_t sample) {
+void ProcessedSampMess::addSample(unsigned int sample) {
 	samples[writeIndex] = sample;
 	writeIndex++;
 }
 
 //-------------------------------------removeSample---------------------------------------------------------------------------
-uint8_t RawSampMess::removeSample(void) {
+uint8_t ProcessedSampMess::removeSample(void) {
 	readIndex++;
 	return samples[readIndex - 1];
 }
 
-//-------------------------------------getSampleRate-------------------------------------------------------------------------
-unsigned int RawSampMess::getSampleRate(void) {
-	return sampleRate;
-}
-
 //-------------------------------------getSize-------------------------------------------------------------------------------
-unsigned int RawSampMess::getSize(void) {
+unsigned int ProcessedSampMess::getSize(void) {
 	return this->length;
 }
 
 //-------------------------------------Destructor-----------------------------------------------------------------------------
-RawSampMess::~RawSampMess() {
+ProcessedSampMess::~ProcessedSampMess() {
 	if (samples)
 		delete[] samples;
 }
