@@ -60,8 +60,8 @@
 			set(findobj(osciRaw, 'type', 'line'), 'xdata', t, 'ydata', P1); 
 			set(findobj(osciFilt, 'type', 'line'), 'xdata', t, 'ydata', P2); 
 			set(findobj(osciBin, 'type', 'line'), 'xdata', t, 'ydata', P3); 
-			axis(osciRaw,[0 refresh_rate*1e3 -20 20]);
-			axis(osciFilt,[0 refresh_rate*1e3 -20 20]);
+			axis(osciRaw,[0 refresh_rate*1e3 -50 50]);
+			axis(osciFilt,[0 refresh_rate*1e3 -50 50]);
 			axis(osciBin,[0 refresh_rate*1e3 0 1.1]);
 			offset = offset + 1;
 			sum=sum+length(P2)
