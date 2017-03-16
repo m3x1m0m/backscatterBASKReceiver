@@ -13,13 +13,13 @@ namespace infrastructure {
 namespace message {
 
 SampleMessage::SampleMessage(long sampleRate, size_t size) :
-		readIndex(0), writeIndex(0) {
+		size(size), writeIndex(0), readIndex(0), sampleRate(0) {
 	this->sampless = new unsigned int[size];
 	this->sampleRate = sampleRate;
 }
 
 void SampleMessage::addSample(unsigned int sample) {
-	sampless[writeIndex] = 0;
+	sampless[writeIndex] = sample;
 	writeIndex++;
 }
 
