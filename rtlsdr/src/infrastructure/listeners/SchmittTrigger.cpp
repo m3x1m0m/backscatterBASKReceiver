@@ -18,13 +18,14 @@
 #include <string>
 #include <sstream>
 #include <stdlib.h>
+#include <cmath>
 
 namespace backscatter {
 namespace infrastructure {
 namespace listener {
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
-SchmittTrigger::SchmittTrigger():Listener() {
+SchmittTrigger::SchmittTrigger(bool idebug):Listener() {
 	//Variables
 	message::RawSampMess msg;
 	std::ifstream myfile (MY_COEFFICIENTS_FILE);
@@ -33,6 +34,7 @@ SchmittTrigger::SchmittTrigger():Listener() {
 	unsigned int end_pos = 0;
 	std::stringstream lineStream;
 	std::string oneCoeff;
+	std::vector<float> filterCoefficients_tmp;
 
 	//Action
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
@@ -44,11 +46,23 @@ SchmittTrigger::SchmittTrigger():Listener() {
 			line = line.substr(start_pos,end_pos-start_pos);
 			lineStream.str(line);
 			while(std::getline(lineStream,oneCoeff,',')){					// Read CSV values from filter design tool
-			        filterCoefficients.push_back(atof(oneCoeff.c_str()));
+				filterCoefficients_tmp.push_back(atof(oneCoeff.c_str()));
 			}
-			std::cout << "Number of taps: " << filterCoefficients.size() << std::endl;
+			num_taps = filterCoefficients_tmp.size();
+			std::cout << "Number of taps: " << filterCoefficients_tmp.size() << std::endl;
 			myfile.close();
-	} else std::cout << "Unable to open file.";
+			filterCoefficients = new float[num_taps];						// Get coefficients out of the vector
+			for(unsigned int i=0; i<filterCoefficients_tmp.size();i++){
+				filterCoefficients[i]=filterCoefficients_tmp[i];
+			}
+	} else
+		std::cout << "Unable to open file.";
+
+	rawFile.open(MY_RAW_FILE, std::ios::out);								// Open files for logging
+	filteredFile.open(MY_FILTERED_FILE, std::ios::out);
+	binaryFile.open(MY_BINARY_FILE, std::ios::out);
+
+	debug = idebug;
 }
 
 //-------------------------------------convertSample--------------------------------------------------------------------------
@@ -58,7 +72,7 @@ cmplsampfl_t SchmittTrigger::convertSample(uint8_t in_real, uint8_t in_imag, boo
 	oneSample.imag = ( (float) in_imag)-127.5;								// Second byte is from the quadrature ADC acc. to the internet
 	if(debug){
 		std::cout << "Real (Float): " << oneSample.real << "\n";
-		std::cout << "Imaginary (Float): " << oneSample.real << "\n";
+		std::cout << "Imaginary (Float): " << oneSample.imag << "\n";
 	}
 	return oneSample;
 }
@@ -71,38 +85,67 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 	unsigned int i = 0,j = 0;
 	RawSampMess *mess = NULL;
 	cmplsampfl_t *floatBuffer;
+	unsigned int mess_size = 0;
+	static unsigned int m = 0;
 
 	//Action
 	mess = (RawSampMess*) message;
-	floatBuffer = new cmplsampfl_t[mess->getSize()];
-	while(i<mess->getSize()){
-		real=mess->removeSample();
-		imag=mess->removeSample();
-		floatBuffer[j] = convertSample(real,imag,false);						// Convert sample
-		i+=2;
-		j++;
+	mess_size= mess->getSize();
+
+	if(!debug){
+		floatBuffer = new cmplsampfl_t[mess_size];
+		while(i<mess_size){
+			real=mess->removeSample();
+			imag=mess->removeSample();
+			floatBuffer[j] = convertSample(real,imag,false);						// Convert sample
+			i+=2;
+			j++;
+		}
+		std::cout << "Message Nu.:" << ++m << std::endl;
+		dumpFloats2File(rawFile,floatBuffer,mess_size/2);							// Save raw data
+		filterFIR(floatBuffer,mess_size/2);											// Filter
+		dumpFloats2File(filteredFile,floatBuffer,mess_size/2);						// Save filtered data
+		for(unsigned int m=0;m<mess_size/2;m++){
+			floatBuffer[m] = trigger(&floatBuffer[m]);
+		}
+	} else{
+		floatBuffer = new cmplsampfl_t[num_taps];
+		while(i<num_taps){
+					floatBuffer[i].real=0;
+					floatBuffer[i].imag=0;
+					if(i > 10) {
+						floatBuffer[i].real=10;
+						floatBuffer[i].imag=10;
+					}
+					i++;
+				}
+		std::cout << "Debug Mode! Message Nu.:" << ++m << std::endl << num_taps << std::endl;
+		if(m<=1){
+			dumpFloats2File(rawFile,floatBuffer,num_taps);								// Save raw data
+			filterFIR(floatBuffer,num_taps);											// Filter
+			dumpFloats2File(filteredFile,floatBuffer,num_taps);							// Save filtered data
+		}
 	}
-	dumpFloats2File(MY_RAW_FILE,floatBuffer,mess->getSize()/2);					// Save raw data
-	filterFIR(floatBuffer,mess->getSize());										// Filter
-	dumpFloats2File(MY_FILTERED_FILE,floatBuffer,mess->getSize()/2);			// Save filtered data
 	delete[] floatBuffer;
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
-void SchmittTrigger::dumpFloats2File(char *filename, cmplsampfl_t *floatBuffer, unsigned int length){
+void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length){
 	// Variables
-	std::ofstream myfile;
 	unsigned int i = 0;
 
 	//Action
-	myfile.open(filename, std::ios::app);
-	i = 0;
-	while(i < length){
-		myfile << floatBuffer[i].real << "," << floatBuffer[i].imag << std::endl;
-		i++;
-	}
-	myfile.close();
-	//std::cout << "Samples dumped into " << filename << "." << std::endl;
+	if(myfile.is_open()){
+		i = 0;
+		while(i < length){
+			myfile << floatBuffer[i].real << "," << floatBuffer[i].imag << std::endl;
+			if(!debug)
+				i+=MY_DECIMATION_FACTOR;									// Downsampling here necessary
+			else
+				i++;
+		}
+	} else
+		std::cout << "File " << myfile << " is not opened." << std::endl;
 }
 
 //-------------------------------------showADCData----------------------------------------------------------------------------
@@ -113,7 +156,10 @@ void SchmittTrigger::showADCData(uint8_t in_real, uint8_t in_imag){
 
 //-------------------------------------Destructor-----------------------------------------------------------------------------
 SchmittTrigger::~SchmittTrigger() {
-	// TODO Auto-generated destructor stub
+	rawFile.close();
+	filteredFile.close();
+	binaryFile.close();
+	delete [] filterCoefficients;
 }
 //-------------------------------------filterFIR------------------------------------------------------------------------------
 void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, unsigned int length){
@@ -121,10 +167,9 @@ void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, unsigned int length){
 	cmplsampfl_t y;
 	cmplsampfl_t *reg;
 	std::string line;
-	unsigned int num_taps = filterCoefficients.size();
 
 	// Action
-	reg = new cmplsampfl_t[num_taps];						// Get some space for filter coefficients
+	reg = new cmplsampfl_t[num_taps];										// Get some space for filter coefficients
 
 	for(unsigned int j=0; j<num_taps; j++){
 			reg[j].imag = 0.0; 												// Initialize the delay registers.
@@ -142,9 +187,18 @@ void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, unsigned int length){
 		floatBuffer[j].real = y.real;										// Save new output
 		floatBuffer[j].imag = y.imag;
 	}
-	delete [] reg;														// Clean after yourself
+	delete [] reg;															// Clean after yourself
 }
 
+//-------------------------------------trigger--------------------------------------------------------------------------------
+unsigned int SchmittTrigger::trigger(cmplsampfl_t *floatBuffer){
+	// Variables
+
+	// Action
+	if(threshold>sqrt(floatBuffer->real^2))
+		return 1;
+	else
+		return 0;
 }
 } /* namespace infrastructure */
 } /* namespace backscatter */

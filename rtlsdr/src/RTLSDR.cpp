@@ -64,7 +64,7 @@ RTLSDR::~RTLSDR() {
 }
 
 //-------------------------------------continuousReadout----------------------------------------------------------------------
-void RTLSDR::continuousReadout() {
+void RTLSDR::continuousReadout(){
 	// Variables
 	int r = 0;
 	int n_read = 0;
@@ -76,19 +76,19 @@ void RTLSDR::continuousReadout() {
 	// Action
 	cout << "Buffer size: " << MY_BUFFER_LENGTH << " byte" << endl;
 	cout << "Starting to read." << endl;
-	// Start async readout
-	//while(1){
-	r = rtlsdr_read_sync(dev, buf, len, &n_read);
-	if (r < 0) {
-		fprintf(stderr, "WARNING: sync read failed.\n");
-	}
-	msg = new RawSampMess(samp_rate, MY_BUFFER_LENGTH);
-	while (i < len) {
+	while(1){
+		msg = new RawSampMess(samp_rate, MY_BUFFER_LENGTH);
+		i = 0;
+		r = rtlsdr_read_sync(dev, buf, len, &n_read);
+		if (r < 0) {
+			fprintf(stderr, "WARNING: sync read failed.\n");
+		}
+		while (i < len){
 			msg->addSample(buf[i]);
 			i++;
 		}
 		msgBus->pushMessage(msg);
-		cout << "Pushed samples to bus." << endl;
-	//}
+		cout << "RTLSDR: Pushed samples to bus." << endl;
+	}
 }
 } /* namespace backscatter */
