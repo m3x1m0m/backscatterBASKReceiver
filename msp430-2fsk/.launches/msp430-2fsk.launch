@@ -12,7 +12,7 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.TI MSP430 USB2_0/MSP430" value="msp430-2fsk"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:msp430-2fsk}"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.TI MSP430 USB1/MSP430" value="/Users/clovis/Desktop/wireless/msp430-2fsk/Debug/msp430-2fsk.out"/>
-<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.TI MSP430 USB1_0/MSP430" value="/Users/clovis/Desktop/wireless/msp430-2fsk/Debug/msp430-2fsk.out"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.TI MSP430 USB1_0/MSP430" value="/media/maximilian/87f7f722-b1f2-41c7-ad6b-394d8b26d400/Geschäft/Master/Semester2/Wireless/git repo backscatterDemo/msp430-2fsk/Debug/msp430-2fsk.out"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/msp430-2fsk"/>
 </listAttribute>

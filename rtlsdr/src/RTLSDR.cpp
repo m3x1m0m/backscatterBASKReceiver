@@ -56,7 +56,7 @@ RTLSDR::RTLSDR(unsigned int isamp_rate, unsigned int ifrequency,
 
 	verbose_reset_buffer(dev);								// Empty HW buffer
 
-	cout << "Initialization done." << endl;
+	cout << "Initialization of RTLSDR done." << endl;
 }
 //-------------------------------------Destructor-----------------------------------------------------------------------------
 RTLSDR::~RTLSDR() {
@@ -75,6 +75,7 @@ void RTLSDR::continuousReadout(){
 
 	// Action
 	cout << "Buffer size: " << MY_BUFFER_LENGTH << " byte" << endl;
+	cout << "Number of Samples For Each Message: " << MY_BUFFER_LENGTH/2 << " byte" << endl;
 	cout << "Starting to read." << endl;
 	while(1){
 		msg = new RawSampMess(samp_rate, MY_BUFFER_LENGTH);

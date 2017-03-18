@@ -15,13 +15,19 @@
 
 using namespace std;
 using namespace backscatter;
-
-int main() {
-	using namespace backscatter::infrastructure;
+using namespace backscatter::infrastructure;
 	using namespace backscatter::infrastructure::listener;
+
+int main(int argc, char* argv[]) {
+	if(argc < 5){
+		cout << "Wrong usage! Right usage: " << endl;
+		cout << "./rtlsdr fsamp ftuned gain threshold" << endl;
+		return 1;
+	}
+
 	MessageBus *bus = new MessageBus();
-	RTLSDR myRTLSDR(250e3, 632.2e6, 400, bus);
-	SchmittTrigger *mySchmittTrigger = new SchmittTrigger(false,15.0);
+	RTLSDR myRTLSDR((unsigned int)atof(argv[1]), (unsigned int)atof(argv[2]), 10*(unsigned int)atof(argv[3]), bus);
+	SchmittTrigger *mySchmittTrigger = new SchmittTrigger(false,(unsigned int)atof(argv[4]));
 	bus->addListener(mySchmittTrigger);
 	thread t1(&MessageBus::runLoop, bus);
 	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);

@@ -29,35 +29,15 @@ namespace listener {
 SchmittTrigger::SchmittTrigger(bool idebug, float ithreshold):Listener() {
 	//Variables
 	message::RawSampMess msg;
-	std::ifstream myfile (MY_COEFFICIENTS_FILE);
-	std::string line;
-	unsigned int start_pos = 0;
-	unsigned int end_pos = 0;
-	std::stringstream lineStream;
-	std::string oneCoeff;
-	std::vector<float> filterCoefficients_tmp;
 
 	//Action
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
 
-	if (myfile.is_open()){
-			getline(myfile,line);											// Read one line
-			start_pos = line.find('[') + 1;									// Remove shit around coefficients
-			end_pos = line.find(']');
-			line = line.substr(start_pos,end_pos-start_pos);
-			lineStream.str(line);
-			while(std::getline(lineStream,oneCoeff,',')){					// Read CSV values from filter design tool
-				filterCoefficients_tmp.push_back(atof(oneCoeff.c_str()));
-			}
-			num_taps = filterCoefficients_tmp.size();
-			std::cout << "Number of taps: " << filterCoefficients_tmp.size() << std::endl;
-			myfile.close();
-			filterCoefficients = new float[num_taps];						// Get coefficients out of the vector
-			for(unsigned int i=0; i<filterCoefficients_tmp.size();i++){
-				filterCoefficients[i]=filterCoefficients_tmp[i];
-			}
-	} else
-		std::cout << "Unable to open file.";
+	initializeFIR(MY_COEFFICIENTS_FILE1, &coefficientsFilt1, &numTaps1);					// First filter before downsampling
+	initializeFIR(MY_COEFFICIENTS_FILE2, &coefficientsFilt2,  &numTaps2);					// Second filter after downsampling
+
+	std::cout << "First filter has " << numTaps1 << " taps." << std::endl;
+	std::cout << "Second filter has " << numTaps2 << " taps." << std::endl;
 
 	rawFile.open(MY_RAW_FILE, std::ios::out);								// Open files for logging
 	filteredFile.open(MY_FILTERED_FILE, std::ios::out);
@@ -88,56 +68,44 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 	unsigned int i = 0,j = 0;
 	RawSampMess *msg_recv = NULL;
 	ProcessedSampMess *msg_2send = NULL;
-	cmplsampfl_t *floatBuffer = NULL;
+	cmplsampfl_t *fastBuffer = NULL;
+	cmplsampfl_t *slowBuffer = NULL;
 	unsigned int *intBuffer = NULL;
-	unsigned int msg_size = 0;
+	unsigned int numSamps = 0;
 	static unsigned int m = 0;
 
 	//Action
 	msg_recv = (RawSampMess*) message;
-	msg_size= msg_recv->getSize();
+	numSamps = msg_recv->getSize()/2;
 
 	if(!debug){
-		floatBuffer = new cmplsampfl_t[msg_size];
-		intBuffer = new unsigned int[msg_size];
-		while(i<msg_size){
+		fastBuffer = new cmplsampfl_t[numSamps];
+		slowBuffer = new cmplsampfl_t[numSamps/MY_DECIMATION_FACTOR];
+		intBuffer = new unsigned int[numSamps/MY_DECIMATION_FACTOR];
+		while(i<msg_recv->getSize()){
 			real=msg_recv->removeSample();
 			imag=msg_recv->removeSample();
-			floatBuffer[j] = convertSample(real,imag,false);						// Convert sample
+			fastBuffer[j] = convertSample(real,imag,false);									// Convert sample
 			i+=2;
 			j++;
 		}
-
-		dumpFloats2File(rawFile,floatBuffer,msg_size/2);							// Save raw data
-		filterFIR(floatBuffer,msg_size/2);											// Filter
-		dumpFloats2File(filteredFile,floatBuffer,msg_size/2);						// Save filtered data
-
-		msg_2send = new ProcessedSampMess(msg_recv->getSampleRate(), msg_size);
-		for(unsigned int m=0;m<msg_size/2;m++){
-			intBuffer[m] = trigger(&floatBuffer[m]);
+		filterFIR(fastBuffer, coefficientsFilt1, numSamps, numTaps1);						// First filter
+		downSample(fastBuffer, slowBuffer, numSamps, MY_DECIMATION_FACTOR);					// Calm your live
+		dumpFloats2File(rawFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
+		filterFIR(slowBuffer, coefficientsFilt2, numSamps/MY_DECIMATION_FACTOR, numTaps2);	// Second filter
+		dumpFloats2File(filteredFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
+		msg_2send = new ProcessedSampMess(msg_recv->getSampleRate(), numSamps);
+		for(unsigned int m=0;m<numSamps/MY_DECIMATION_FACTOR;m++){
+			intBuffer[m] = trigger(&slowBuffer[m]);
 			msg_2send->addSample(intBuffer[m]);
 		}
-		dumpInts2File(binaryFile,intBuffer,msg_size/2);
+		dumpInts2File(binaryFile,intBuffer,numSamps/MY_DECIMATION_FACTOR);
 		std::cout << "Message nu.:" << ++m << std::endl;
-	} else{
-		floatBuffer = new cmplsampfl_t[num_taps];
-		while(i<num_taps){
-					floatBuffer[i].real=0;
-					floatBuffer[i].imag=0;
-					if(i > 10) {
-						floatBuffer[i].real=10;
-						floatBuffer[i].imag=10;
-					}
-					i++;
-				}
-		std::cout << "Debug Mode! Message nu.:" << ++m << std::endl << num_taps << std::endl;
-		if(m<=1){
-			dumpFloats2File(rawFile,floatBuffer,num_taps);								// Save raw data
-			filterFIR(floatBuffer,num_taps);											// Filter
-			dumpFloats2File(filteredFile,floatBuffer,num_taps);							// Save filtered data
-		}
+	} else{																					// Check if FIR is implemented correctly
+			std::cout << "Currently no implementation available :'(" << std::endl;
 	}
-	delete[] floatBuffer;
+	delete[] fastBuffer;
+	delete[] slowBuffer;
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
@@ -150,10 +118,7 @@ void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, cmplsampfl_t *floatB
 		i = 0;
 		while(i < length){
 			myfile << floatBuffer[i].real << "," << floatBuffer[i].imag << std::endl;
-			if(!debug)
-				i+=MY_DECIMATION_FACTOR;									// Downsampling here necessary
-			else
-				i++;
+			i++;
 		}
 	} else
 		std::cout << "File " << myfile << " is not opened." << std::endl;
@@ -169,9 +134,6 @@ void SchmittTrigger::dumpInts2File(std::ofstream &myfile, unsigned int *intBuffe
 		i = 0;
 		while(i < length){
 			myfile << intBuffer[i] << std::endl;
-			if(!debug)
-				i+=MY_DECIMATION_FACTOR;									// Downsampling here necessary
-			else
 				i++;
 		}
 	} else
@@ -189,10 +151,11 @@ SchmittTrigger::~SchmittTrigger() {
 	rawFile.close();
 	filteredFile.close();
 	binaryFile.close();
-	delete [] filterCoefficients;
+	delete [] coefficientsFilt1;
+	delete [] coefficientsFilt2;
 }
 //-------------------------------------filterFIR------------------------------------------------------------------------------
-void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, unsigned int length){
+void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
 	// Variables
 	cmplsampfl_t y;
 	cmplsampfl_t *reg;
@@ -219,6 +182,36 @@ void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, unsigned int length){
 	}
 	delete [] reg;															// Clean after yourself
 }
+//-------------------------------------initializeFIR--------------------------------------------------------------------------
+void SchmittTrigger::initializeFIR(char* file, float **filterCoefficients, unsigned int *num_taps){
+	//Variables
+	std::ifstream myfile(file);
+	std::string line;
+	unsigned int start_pos = 0;
+	unsigned int end_pos = 0;
+	std::stringstream lineStream;
+	std::string oneCoeff;
+	std::vector<float> filterCoefficients_tmp;
+
+	//Action
+	if (myfile.is_open()){
+			getline(myfile,line);											// Read one line
+			start_pos = line.find('[') + 1;									// Remove shit around coefficients
+			end_pos = line.find(']');
+			line = line.substr(start_pos,end_pos-start_pos);
+			lineStream.str(line);
+			while(std::getline(lineStream,oneCoeff,',')){					// Read CSV values from filter design tool
+				filterCoefficients_tmp.push_back(atof(oneCoeff.c_str()));
+			}
+			*num_taps = filterCoefficients_tmp.size();
+			myfile.close();
+			(*filterCoefficients) = new float[*num_taps];						// Get coefficients out of the vector
+			for(unsigned int i=0; i<*num_taps;i++){
+				(*filterCoefficients)[i]=filterCoefficients_tmp[i];
+			}
+	} else
+		std::cout << "Unable to open coefficients file: " << file << std::endl;
+}
 
 //-------------------------------------trigger--------------------------------------------------------------------------------
 unsigned int SchmittTrigger::trigger(cmplsampfl_t *floatBuffer){
@@ -229,6 +222,20 @@ unsigned int SchmittTrigger::trigger(cmplsampfl_t *floatBuffer){
 		return 1;
 	else
 		return 0;
+}
+
+//-------------------------------------downSample------------------------------------------------------------------------------
+void SchmittTrigger::downSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){
+	// Variables
+	unsigned int j = 0;
+
+	// Action
+	for(unsigned int i=0; i<length;i++){
+		if(!(i%factor) && ( j < (length/factor)) ){
+			outStream[j] = inStream[i];					// Only take every factorth sample
+			j++;
+		}
+	}
 }
 
 } /* namespace listener */

@@ -85,8 +85,8 @@ __interrupt void timer_a_bitbuf()
         //if (packet_bits[txstate.bit_i])
         if(one)
         {
-            TBCCR0 = TIMERB_1_PERIOD - 1;
-            TBCCR1 = TIMERB_1_MID;
+            TBCCR0 = TIMERB_0_PERIOD - 1;
+            TBCCR1 = TIMERB_0_MID;
         }
         txstate.bit_i++;
     }

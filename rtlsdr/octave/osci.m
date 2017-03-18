@@ -8,9 +8,9 @@
         % Vars
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 		
-		samp_rate = 250e3			% Hertz
+		samp_rate = 25e3			% Hertz
 		refresh_rate =	0.05			% Seconds 
-		PRE = 100				% Downsampling rate of the write function
+		PRE = 1					% Downsampling rate of the write function
 		N = samp_rate*refresh_rate/PRE		% Number of samples
 		fileRaw = 'raw.csv'
 		fileFiltered = 'filtered.csv'	
