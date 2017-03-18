@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lcg.h"
-#include "driverlib.h"
+#include "MSP430FR5xx_6xx/driverlib.h"
 
 uint8_t one = 0;
 
