@@ -64,9 +64,9 @@ private:
 	void initializeFIR(char* file, float **filterCoefficients, unsigned int *num_taps);
 	void complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor);
 	void downSample(float *inStream, float *outStream, unsigned int length, unsigned int factor);
-	float rectify(cmplsampfl_t floatBuffer);
+	void rectify(cmplsampfl_t *inStream, float *outStream, unsigned int length);
 	unsigned int trigger(float *floatBuffer);
-	cmplsampfl_t convertSample(uint8_t in_real, uint8_t in_imag);
+	cmplsampfl_t convertSample(uint8_t *in_real, uint8_t *in_imag);
 };
 
 }

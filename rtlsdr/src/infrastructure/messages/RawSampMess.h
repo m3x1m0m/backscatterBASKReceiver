@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------------
-// Project:    	Backscatter BPSK Receiver
+// Project:    	Backscatter BASK Receiver
 // Name:		RawSampMess.h
 // Author:		Maximilian Stiefel
 // Date:		15.03.2017
@@ -21,7 +21,7 @@ namespace message {
 class RawSampMess: public Message {
 public:
 	RawSampMess() :
-			writeIndex(0), readIndex(0), sampleRate(0), samples(0), length(0)  {
+			writeIndex(0), readIndex(0), sampleRate(0), length(0), samples(0)  {
 	}
 	RawSampMess(unsigned int isampleRate, unsigned int ilength);
 	void addSample(uint8_t sample) ;

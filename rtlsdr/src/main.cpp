@@ -12,6 +12,7 @@
 #include <thread>
 
 #include "infrastructure/listeners/Demodulator.h"
+#include "infrastructure/listeners/Decoder.h"
 #include "RTLSDR.h"
 
 using namespace std;
@@ -29,14 +30,14 @@ int main(int argc, char* argv[]) {
 	MessageBus *bus = new MessageBus();
 	RTLSDR myRTLSDR((unsigned int)atof(argv[1]), (unsigned int)atof(argv[2]), 10*(unsigned int)atof(argv[3]), bus);
 	Demodulator *myDemodulator = new Demodulator(false,(unsigned int)atof(argv[4]), bus);
+	Decoder *myDecoder = new Decoder();
 	bus->addListener(myDemodulator);
+	bus->addListener(myDecoder);
 	thread t1(&MessageBus::runLoop, bus);
 	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);
 	char c;
-	std::cin >> c;
-	bus->stop();
-	while (bus->isRunning())
-		;
+	cin >> c;
+	while (bus->isRunning());
 	t1.join();
 	t2.join();
 	delete bus;

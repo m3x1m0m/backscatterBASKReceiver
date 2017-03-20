@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------------
-// Project:    	Backscatter BASK Demodulator
+// Project:    	Backscatter BASK Receiver
 // Name:		Demodulator.cpp
 // Author:		Maximilian Stiefel
 // Date:		15.03.2017
@@ -11,7 +11,6 @@
 //-------------------------------------Libraries------------------------------------------------------------------------------
 #include "Demodulator.h"
 #include "../messages/RawSampMess.h"
-#include "../messages/SampleMessage.h"
 #include "../messages/MessageTypes.h"
 #include <iostream>
 #include <fstream>
@@ -20,6 +19,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <cmath>
+#include "../messages/ManchEnSampMess.h"
 
 namespace backscatter {
 namespace infrastructure {
@@ -50,10 +50,10 @@ Demodulator::Demodulator(bool idebug, float ithreshold, MessageBus* ibus):Listen
 }
 
 //-------------------------------------convertSample--------------------------------------------------------------------------
-cmplsampfl_t Demodulator::convertSample(uint8_t in_real, uint8_t in_imag){
+cmplsampfl_t Demodulator::convertSample(uint8_t *in_real, uint8_t *in_imag){
 	cmplsampfl_t oneSample;
-	oneSample.real = ( (float) in_real)-127.5;								// First byte is from the in phase ADC
-	oneSample.imag = ( (float) in_imag)-127.5;								// Second byte is from the quadrature ADC acc. to the internet
+	oneSample.real = ( (float) *in_real)-127.5;								// First byte is from the in phase ADC
+	oneSample.imag = ( (float) *in_imag)-127.5;								// Second byte is from the quadrature ADC acc. to the internet
 	if(debug){
 		std::cout << "Real (Float): " << oneSample.real << "\n";
 		std::cout << "Imaginary (Float): " << oneSample.imag << "\n";
@@ -68,8 +68,9 @@ void Demodulator::receiveMessage(message::Message* message) {
 	uint8_t imag = 0;
 	unsigned int i = 0,j = 0;
 	RawSampMess *msg_recv = NULL;
-	SampleMessage *msg_2send = NULL;
-	float *fastBuffer = NULL;
+	ManchEnSampMess *msg_2send = NULL;														// Data is still Manchester encoded
+	cmplsampfl_t *fastBuffer = NULL;
+	cmplsampfl_t *slowBuffer_t = NULL;
 	float *slowBuffer = NULL;
 	unsigned int *intBuffer = NULL;
 	unsigned int numSamps = 0;
@@ -79,22 +80,24 @@ void Demodulator::receiveMessage(message::Message* message) {
 	numSamps = msg_recv->getSize()/2;
 
 	if(!debug){
-		fastBuffer = new float[numSamps];
+		fastBuffer = new cmplsampfl_t[numSamps];
+		slowBuffer_t = new cmplsampfl_t[numSamps];
 		slowBuffer = new float[numSamps/MY_DECIMATION_FACTOR];
 		intBuffer = new unsigned int[numSamps/MY_DECIMATION_FACTOR];
 		while(i<msg_recv->getSize()){
 			real=msg_recv->removeSample();
 			imag=msg_recv->removeSample();
-			fastBuffer[j] = rectify(convertSample(real,imag));								// Convert sample
+			fastBuffer[j] = convertSample(&real,&imag);									// Convert sample
 			i+=2;
 			j++;
 		}
-		filterFIR(fastBuffer, coefficientsFilt1, numSamps, numTaps1);						// First filter
-		downSample(fastBuffer, slowBuffer, numSamps, MY_DECIMATION_FACTOR);					// Calm your live
-		dumpFloats2File(rawFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
+		complexFIR(fastBuffer, coefficientsFilt1, numSamps, numTaps1);						// First filter
+		complexDownSample(fastBuffer, slowBuffer_t, numSamps, MY_DECIMATION_FACTOR);		// Calm your live
+		dumpCmplx2File(rawFile,slowBuffer_t,numSamps/MY_DECIMATION_FACTOR);
+		rectify(slowBuffer_t,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
 		filterFIR(slowBuffer, coefficientsFilt2, numSamps/MY_DECIMATION_FACTOR, numTaps2);	// Second filter
 		dumpFloats2File(filteredFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
-		msg_2send = new SampleMessage(msg_recv->getSampleRate(), numSamps/MY_DECIMATION_FACTOR);
+		msg_2send = new ManchEnSampMess(msg_recv->getSampleRate(), numSamps/MY_DECIMATION_FACTOR);
 		for(unsigned int m=0;m<numSamps/MY_DECIMATION_FACTOR;m++){
 			intBuffer[m] = trigger(&slowBuffer[m]);
 			msg_2send->addSample(intBuffer[m]);
@@ -266,11 +269,12 @@ unsigned int Demodulator::trigger(float *floatBuffer){
 		return 0;
 }
 //-------------------------------------rectify--------------------------------------------------------------------------------
-float Demodulator::rectify(cmplsampfl_t floatBuffer){
+void Demodulator::rectify(cmplsampfl_t *inStream, float *outStream, unsigned int length){
 	// Variables
 
 	// Actions
-	return ( sqrt(floatBuffer.real*floatBuffer.real + floatBuffer.imag*floatBuffer.imag));
+	for(unsigned int i=0; i< length; i++)
+		outStream[i] = sqrt(inStream[i].real*inStream[i].real + inStream[i].imag*inStream[i].imag);
 }
 //-------------------------------------complexDownSample----------------------------------------------------------------------
 void Demodulator::complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){

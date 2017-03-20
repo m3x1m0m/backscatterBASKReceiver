@@ -19,7 +19,7 @@ namespace message {
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
 RawSampMess::RawSampMess(unsigned int isampleRate, unsigned int ilength) :
-		readIndex(0), writeIndex(0) {
+		writeIndex(0), readIndex(0) {
 	this->samples = new uint8_t[ilength];
 	this->sampleRate = isampleRate;
 	this->length = ilength;
