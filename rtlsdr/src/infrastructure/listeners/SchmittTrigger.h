@@ -42,7 +42,6 @@ public:
 	virtual void receiveMessage(message::Message * message) override;
 	virtual ~SchmittTrigger();
 private:
-	cmplsampfl_t convertSample(uint8_t in_real, uint8_t in_imag, bool debug);
 	float *coefficientsFilt1;						// Two different filters have to be used
 	float *coefficientsFilt2;
 	unsigned int numTaps1;
@@ -55,12 +54,17 @@ private:
 	float threshold;
 
 	void showADCData(uint8_t in_real, uint8_t in_imag);
-	void dumpFloats2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length);
+	void dumpFloats2File(std::ofstream &myfile, float *floatBuffer, unsigned int length);
+	void dumpCmplx2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length);
 	void dumpInts2File(std::ofstream &myfile, unsigned int *intBuffer, unsigned int length);
-	void filterFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length,unsigned int num_taps);
+	void complexFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length,unsigned int num_taps);
+	void filterFIR(float *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps);
 	void initializeFIR(char* file, float **filterCoefficients, unsigned int *num_taps);
-	void downSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor);
-	unsigned int trigger(cmplsampfl_t *floatBuffer);
+	void complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor);
+	void downSample(float *inStream, float *outStream, unsigned int length, unsigned int factor);
+	float rectify(cmplsampfl_t floatBuffer);
+	unsigned int trigger(float *floatBuffer);
+	cmplsampfl_t convertSample(uint8_t in_real, uint8_t in_imag);
 };
 
 }

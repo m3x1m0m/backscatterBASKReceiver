@@ -49,7 +49,7 @@ SchmittTrigger::SchmittTrigger(bool idebug, float ithreshold):Listener() {
 }
 
 //-------------------------------------convertSample--------------------------------------------------------------------------
-cmplsampfl_t SchmittTrigger::convertSample(uint8_t in_real, uint8_t in_imag, bool debug){
+cmplsampfl_t SchmittTrigger::convertSample(uint8_t in_real, uint8_t in_imag){
 	cmplsampfl_t oneSample;
 	oneSample.real = ( (float) in_real)-127.5;								// First byte is from the in phase ADC
 	oneSample.imag = ( (float) in_imag)-127.5;								// Second byte is from the quadrature ADC acc. to the internet
@@ -68,8 +68,8 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 	unsigned int i = 0,j = 0;
 	RawSampMess *msg_recv = NULL;
 	ProcessedSampMess *msg_2send = NULL;
-	cmplsampfl_t *fastBuffer = NULL;
-	cmplsampfl_t *slowBuffer = NULL;
+	float *fastBuffer = NULL;
+	float *slowBuffer = NULL;
 	unsigned int *intBuffer = NULL;
 	unsigned int numSamps = 0;
 	static unsigned int m = 0;
@@ -79,13 +79,13 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 	numSamps = msg_recv->getSize()/2;
 
 	if(!debug){
-		fastBuffer = new cmplsampfl_t[numSamps];
-		slowBuffer = new cmplsampfl_t[numSamps/MY_DECIMATION_FACTOR];
+		fastBuffer = new float[numSamps];
+		slowBuffer = new float[numSamps/MY_DECIMATION_FACTOR];
 		intBuffer = new unsigned int[numSamps/MY_DECIMATION_FACTOR];
 		while(i<msg_recv->getSize()){
 			real=msg_recv->removeSample();
 			imag=msg_recv->removeSample();
-			fastBuffer[j] = convertSample(real,imag,false);									// Convert sample
+			fastBuffer[j] = rectify(convertSample(real,imag));								// Convert sample
 			i+=2;
 			j++;
 		}
@@ -109,7 +109,23 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
-void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length){
+void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, float *floatBuffer, unsigned int length){
+	// Variables
+	unsigned int i = 0;
+
+	//Action
+	if(myfile.is_open()){
+		i = 0;
+		while(i < length){
+			myfile << floatBuffer[i] << std::endl;
+			i++;
+		}
+	} else
+		std::cout << "File " << myfile << " is not opened." << std::endl;
+}
+
+//-------------------------------------dumpData2File---------------------------------------------------------------------------
+void SchmittTrigger::dumpCmplx2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length){
 	// Variables
 	unsigned int i = 0;
 
@@ -154,8 +170,8 @@ SchmittTrigger::~SchmittTrigger() {
 	delete [] coefficientsFilt1;
 	delete [] coefficientsFilt2;
 }
-//-------------------------------------filterFIR------------------------------------------------------------------------------
-void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
+//-------------------------------------complexFIR-----------------------------------------------------------------------------
+void SchmittTrigger::complexFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
 	// Variables
 	cmplsampfl_t y;
 	cmplsampfl_t *reg;
@@ -179,6 +195,31 @@ void SchmittTrigger::filterFIR(cmplsampfl_t *floatBuffer, float *filterCoefficie
 		}
 		floatBuffer[j].real = y.real;										// Save new output
 		floatBuffer[j].imag = y.imag;
+	}
+	delete [] reg;															// Clean after yourself
+}
+
+//-------------------------------------filterFIR------------------------------------------------------------------------------
+void SchmittTrigger::filterFIR(float *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
+	// Variables
+	float y;
+	float *reg;
+	std::string line;
+
+	// Action
+	reg = new float[num_taps];												// Get some space for filter coefficients
+
+	for(unsigned int j=0; j<num_taps; j++){
+		reg[j] = 0.0;															// Initialize the delay registers.
+	}
+	for(unsigned int j=0; j<length; j++){
+		for(unsigned int k=num_taps; k>1; k--)reg[k-1] = reg[k-2];			// Shift register values
+		reg[0] = floatBuffer[j];
+		y = 0.0;															// Produce new output
+		for(unsigned int k=0; k<num_taps; k++){
+			y += filterCoefficients[k] * reg[k];
+		}
+		floatBuffer[j] = y;													// Save new output
 	}
 	delete [] reg;															// Clean after yourself
 }
@@ -214,18 +255,37 @@ void SchmittTrigger::initializeFIR(char* file, float **filterCoefficients, unsig
 }
 
 //-------------------------------------trigger--------------------------------------------------------------------------------
-unsigned int SchmittTrigger::trigger(cmplsampfl_t *floatBuffer){
+unsigned int SchmittTrigger::trigger(float *floatBuffer){
 	// Variables
 
 	// Action
-	if( threshold < sqrt( (floatBuffer->real)*(floatBuffer->real) ) )
+	if( threshold < *floatBuffer)
 		return 1;
 	else
 		return 0;
 }
+//-------------------------------------rectify--------------------------------------------------------------------------------
+float SchmittTrigger::rectify(cmplsampfl_t floatBuffer){
+	// Variables
 
-//-------------------------------------downSample------------------------------------------------------------------------------
-void SchmittTrigger::downSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){
+	// Actions
+	return ( sqrt(floatBuffer.real*floatBuffer.real + floatBuffer.imag*floatBuffer.imag));
+}
+//-------------------------------------complexDownSample----------------------------------------------------------------------
+void SchmittTrigger::complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){
+	// Variables
+	unsigned int j = 0;
+
+	// Action
+	for(unsigned int i=0; i<length;i++){
+		if(!(i%factor) && ( j < (length/factor)) ){
+			outStream[j] = inStream[i];					// Only take every factorth sample
+			j++;
+		}
+	}
+}
+//-------------------------------------downSample-----------------------------------------------------------------------------
+void SchmittTrigger::downSample(float *inStream, float *outStream, unsigned int length, unsigned int factor){
 	// Variables
 	unsigned int j = 0;
 
