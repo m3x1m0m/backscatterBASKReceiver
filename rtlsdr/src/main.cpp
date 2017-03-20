@@ -10,8 +10,9 @@
 
 #include <iostream>
 #include <thread>
+
+#include "infrastructure/listeners/Demodulator.h"
 #include "RTLSDR.h"
-#include "./infrastructure/listeners/SchmittTrigger.h"
 
 using namespace std;
 using namespace backscatter;
@@ -27,8 +28,8 @@ int main(int argc, char* argv[]) {
 
 	MessageBus *bus = new MessageBus();
 	RTLSDR myRTLSDR((unsigned int)atof(argv[1]), (unsigned int)atof(argv[2]), 10*(unsigned int)atof(argv[3]), bus);
-	SchmittTrigger *mySchmittTrigger = new SchmittTrigger(false,(unsigned int)atof(argv[4]));
-	bus->addListener(mySchmittTrigger);
+	Demodulator *myDemodulator = new Demodulator(false,(unsigned int)atof(argv[4]), bus);
+	bus->addListener(myDemodulator);
 	thread t1(&MessageBus::runLoop, bus);
 	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);
 	char c;

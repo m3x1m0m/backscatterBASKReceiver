@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------------------------------------------------------------
-// Project:    	Backscatter BPSK Receiver
-// Name:		ProcessedSampMess.cpp
+// Project:    	Backscatter BASK Demodulator
+// Name:		Demodulator.cpp
 // Author:		Maximilian Stiefel
-// Date:		16.03.2017
+// Date:		20.03.2017
 //
 // Description:
 //

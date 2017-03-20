@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------------------------------
-// Project:    	Backscatter BPSK Receiver
-// Name:		SchmittTrigger.h
+// Project:    	Backscatter BASK Demodulator
+// Name:		Demodulator.h
 // Author:		Maximilian Stiefel
 // Date:		15.03.2017
 //
@@ -13,6 +13,7 @@
 
 //-------------------------------------Libraries------------------------------------------------------------------------------
 #include "Listener.h"
+#include "../MessageBus.h"
 #include <fstream>
 
 //-------------------------------------Namespace------------------------------------------------------------------------------
@@ -35,12 +36,12 @@ typedef struct cmplsampfl_t{						// Complex sample as float
 		float imag;
 }cmplsampfl_t;
 
-//-------------------------------------SchmittTrigger-------------------------------------------------------------------------
-class SchmittTrigger: public Listener {
+//-------------------------------------Demodulator-------------------------------------------------------------------------
+class Demodulator: public Listener {
 public:
-	SchmittTrigger(bool idebug, float ithreshold);
+	Demodulator(bool idebug, float ithreshold,  MessageBus* ibus);
 	virtual void receiveMessage(message::Message * message) override;
-	virtual ~SchmittTrigger();
+	virtual ~Demodulator();
 private:
 	float *coefficientsFilt1;						// Two different filters have to be used
 	float *coefficientsFilt2;
@@ -52,6 +53,7 @@ private:
 	std::ofstream binaryFile;
 	bool debug;
 	float threshold;
+	MessageBus* msgBus;
 
 	void showADCData(uint8_t in_real, uint8_t in_imag);
 	void dumpFloats2File(std::ofstream &myfile, float *floatBuffer, unsigned int length);

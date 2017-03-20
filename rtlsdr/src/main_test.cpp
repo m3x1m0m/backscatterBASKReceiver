@@ -11,11 +11,12 @@
 #include <iostream>
 #include <thread>
 #include "RTLSDR.h"
-#include "./infrastructure/listeners/SchmittTrigger.h"
 #include <stdint.h>
 #include "infrastructure/messages/SampleMessage.h"
 #include "PacketDecoderListener.h"
 #include <chrono>
+
+#include "infrastructure/listeners/Demodulator.h"
 using namespace std;
 using namespace backscatter;
 enum SendState {

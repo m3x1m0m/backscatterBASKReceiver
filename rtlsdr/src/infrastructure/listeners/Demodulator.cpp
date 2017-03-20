@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------------------------------
-// Project:    	Backscatter BPSK Receiver
-// Name:		SchmittTrigger.h
+// Project:    	Backscatter BASK Demodulator
+// Name:		Demodulator.cpp
 // Author:		Maximilian Stiefel
 // Date:		15.03.2017
 //
@@ -9,9 +9,9 @@
 //----------------------------------------------------------------------------------------------------------------------------
 
 //-------------------------------------Libraries------------------------------------------------------------------------------
-#include "SchmittTrigger.h"
+#include "Demodulator.h"
 #include "../messages/RawSampMess.h"
-#include "../messages/ProcessedSampMess.h"
+#include "../messages/SampleMessage.h"
 #include "../messages/MessageTypes.h"
 #include <iostream>
 #include <fstream>
@@ -26,7 +26,7 @@ namespace infrastructure {
 namespace listener {
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
-SchmittTrigger::SchmittTrigger(bool idebug, float ithreshold):Listener() {
+Demodulator::Demodulator(bool idebug, float ithreshold, MessageBus* ibus):Listener() {
 	//Variables
 	message::RawSampMess msg;
 
@@ -46,10 +46,11 @@ SchmittTrigger::SchmittTrigger(bool idebug, float ithreshold):Listener() {
 	debug = idebug;
 	threshold = ithreshold;
 	std::cout << "Threshold: " << threshold << std::endl;
+	msgBus = ibus;
 }
 
 //-------------------------------------convertSample--------------------------------------------------------------------------
-cmplsampfl_t SchmittTrigger::convertSample(uint8_t in_real, uint8_t in_imag){
+cmplsampfl_t Demodulator::convertSample(uint8_t in_real, uint8_t in_imag){
 	cmplsampfl_t oneSample;
 	oneSample.real = ( (float) in_real)-127.5;								// First byte is from the in phase ADC
 	oneSample.imag = ( (float) in_imag)-127.5;								// Second byte is from the quadrature ADC acc. to the internet
@@ -61,18 +62,17 @@ cmplsampfl_t SchmittTrigger::convertSample(uint8_t in_real, uint8_t in_imag){
 }
 
 //-------------------------------------receiveMessage-------------------------------------------------------------------------
-void SchmittTrigger::receiveMessage(message::Message* message) {
+void Demodulator::receiveMessage(message::Message* message) {
 	//Variables
 	uint8_t real = 0;
 	uint8_t imag = 0;
 	unsigned int i = 0,j = 0;
 	RawSampMess *msg_recv = NULL;
-	ProcessedSampMess *msg_2send = NULL;
+	SampleMessage *msg_2send = NULL;
 	float *fastBuffer = NULL;
 	float *slowBuffer = NULL;
 	unsigned int *intBuffer = NULL;
 	unsigned int numSamps = 0;
-	static unsigned int m = 0;
 
 	//Action
 	msg_recv = (RawSampMess*) message;
@@ -94,13 +94,14 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 		dumpFloats2File(rawFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
 		filterFIR(slowBuffer, coefficientsFilt2, numSamps/MY_DECIMATION_FACTOR, numTaps2);	// Second filter
 		dumpFloats2File(filteredFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
-		msg_2send = new ProcessedSampMess(msg_recv->getSampleRate(), numSamps);
+		msg_2send = new SampleMessage(msg_recv->getSampleRate(), numSamps/MY_DECIMATION_FACTOR);
 		for(unsigned int m=0;m<numSamps/MY_DECIMATION_FACTOR;m++){
 			intBuffer[m] = trigger(&slowBuffer[m]);
 			msg_2send->addSample(intBuffer[m]);
 		}
 		dumpInts2File(binaryFile,intBuffer,numSamps/MY_DECIMATION_FACTOR);
-		std::cout << "Message nu.:" << ++m << std::endl;
+		msgBus->pushMessage(msg_2send);
+		std::cout << "Demodulator: Pushed samples to bus." << std::endl;
 	} else{																					// Check if FIR is implemented correctly
 			std::cout << "Currently no implementation available :'(" << std::endl;
 	}
@@ -109,7 +110,7 @@ void SchmittTrigger::receiveMessage(message::Message* message) {
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
-void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, float *floatBuffer, unsigned int length){
+void Demodulator::dumpFloats2File(std::ofstream &myfile, float *floatBuffer, unsigned int length){
 	// Variables
 	unsigned int i = 0;
 
@@ -125,7 +126,7 @@ void SchmittTrigger::dumpFloats2File(std::ofstream &myfile, float *floatBuffer, 
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
-void SchmittTrigger::dumpCmplx2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length){
+void Demodulator::dumpCmplx2File(std::ofstream &myfile, cmplsampfl_t *floatBuffer, unsigned int length){
 	// Variables
 	unsigned int i = 0;
 
@@ -141,7 +142,7 @@ void SchmittTrigger::dumpCmplx2File(std::ofstream &myfile, cmplsampfl_t *floatBu
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
-void SchmittTrigger::dumpInts2File(std::ofstream &myfile, unsigned int *intBuffer, unsigned int length){
+void Demodulator::dumpInts2File(std::ofstream &myfile, unsigned int *intBuffer, unsigned int length){
 	// Variables
 	unsigned int i = 0;
 
@@ -157,13 +158,13 @@ void SchmittTrigger::dumpInts2File(std::ofstream &myfile, unsigned int *intBuffe
 }
 
 //-------------------------------------showADCData----------------------------------------------------------------------------
-void SchmittTrigger::showADCData(uint8_t in_real, uint8_t in_imag){
+void Demodulator::showADCData(uint8_t in_real, uint8_t in_imag){
 	std::cout << "Real (ADC): " << ((int)in_real) << "\n";					// First byte is from the inphase ADC
 	std::cout << "Imaginary (ADC): " << ((int)in_imag) << "\n";				// Second byte is from the quadrature ADC acc. to the internet
 }
 
 //-------------------------------------Destructor-----------------------------------------------------------------------------
-SchmittTrigger::~SchmittTrigger() {
+Demodulator::~Demodulator() {
 	rawFile.close();
 	filteredFile.close();
 	binaryFile.close();
@@ -171,7 +172,7 @@ SchmittTrigger::~SchmittTrigger() {
 	delete [] coefficientsFilt2;
 }
 //-------------------------------------complexFIR-----------------------------------------------------------------------------
-void SchmittTrigger::complexFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
+void Demodulator::complexFIR(cmplsampfl_t *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
 	// Variables
 	cmplsampfl_t y;
 	cmplsampfl_t *reg;
@@ -200,7 +201,7 @@ void SchmittTrigger::complexFIR(cmplsampfl_t *floatBuffer, float *filterCoeffici
 }
 
 //-------------------------------------filterFIR------------------------------------------------------------------------------
-void SchmittTrigger::filterFIR(float *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
+void Demodulator::filterFIR(float *floatBuffer, float *filterCoefficients, unsigned int length, unsigned int num_taps){
 	// Variables
 	float y;
 	float *reg;
@@ -224,7 +225,7 @@ void SchmittTrigger::filterFIR(float *floatBuffer, float *filterCoefficients, un
 	delete [] reg;															// Clean after yourself
 }
 //-------------------------------------initializeFIR--------------------------------------------------------------------------
-void SchmittTrigger::initializeFIR(char* file, float **filterCoefficients, unsigned int *num_taps){
+void Demodulator::initializeFIR(char* file, float **filterCoefficients, unsigned int *num_taps){
 	//Variables
 	std::ifstream myfile(file);
 	std::string line;
@@ -255,7 +256,7 @@ void SchmittTrigger::initializeFIR(char* file, float **filterCoefficients, unsig
 }
 
 //-------------------------------------trigger--------------------------------------------------------------------------------
-unsigned int SchmittTrigger::trigger(float *floatBuffer){
+unsigned int Demodulator::trigger(float *floatBuffer){
 	// Variables
 
 	// Action
@@ -265,14 +266,14 @@ unsigned int SchmittTrigger::trigger(float *floatBuffer){
 		return 0;
 }
 //-------------------------------------rectify--------------------------------------------------------------------------------
-float SchmittTrigger::rectify(cmplsampfl_t floatBuffer){
+float Demodulator::rectify(cmplsampfl_t floatBuffer){
 	// Variables
 
 	// Actions
 	return ( sqrt(floatBuffer.real*floatBuffer.real + floatBuffer.imag*floatBuffer.imag));
 }
 //-------------------------------------complexDownSample----------------------------------------------------------------------
-void SchmittTrigger::complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){
+void Demodulator::complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){
 	// Variables
 	unsigned int j = 0;
 
@@ -285,7 +286,7 @@ void SchmittTrigger::complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *out
 	}
 }
 //-------------------------------------downSample-----------------------------------------------------------------------------
-void SchmittTrigger::downSample(float *inStream, float *outStream, unsigned int length, unsigned int factor){
+void Demodulator::downSample(float *inStream, float *outStream, unsigned int length, unsigned int factor){
 	// Variables
 	unsigned int j = 0;
 
