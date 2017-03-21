@@ -125,7 +125,7 @@ void Demodulator::dumpFloats2File(std::ofstream &myfile, float *floatBuffer, uns
 			i++;
 		}
 	} else
-		std::cout << "File " << myfile << " is not opened." << std::endl;
+		std::cout << "File is not opened." << std::endl;
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
@@ -141,7 +141,7 @@ void Demodulator::dumpCmplx2File(std::ofstream &myfile, cmplsampfl_t *floatBuffe
 			i++;
 		}
 	} else
-		std::cout << "File " << myfile << " is not opened." << std::endl;
+		std::cout << "File is not opened." << std::endl;
 }
 
 //-------------------------------------dumpData2File---------------------------------------------------------------------------
@@ -157,7 +157,7 @@ void Demodulator::dumpInts2File(std::ofstream &myfile, unsigned int *intBuffer, 
 				i++;
 		}
 	} else
-		std::cout << "File " << myfile << " is not opened." << std::endl;
+		std::cout << "File is not opened." << std::endl;
 }
 
 //-------------------------------------showADCData----------------------------------------------------------------------------

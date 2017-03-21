@@ -23,7 +23,7 @@ namespace listener {
 
 Decoder::Decoder() :
 		previousSample(0), sampleBuffer(0), sampleBufferLen(0), sync(0), syncLen(0), syncCounter(0), size(0), sizeLen(0), sizeCounter(0), data(0), dataLen(0), dataCounter(0), dataAmount(0), samplesBit(
-				0), bitCounter(0), preambleOnes(0), preambleZeros(0), baudrate(0) {
+				0), bitCounter(0), preambleCounter(0), preambleOnes(0), preambleZeros(0), baudrate(0) {
 	message::ManchEnSampMess msg;
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
 	// TODO Auto-generated constructor stub
@@ -38,8 +38,23 @@ void Decoder::receiveMessage(Message* message) {
 	 int preambleOnes;
 	 int preamblezeros;
 	 */
+	uint32_t onee = 0;
+	uint32_t zero = 0;
 	while (msg->hasSample()) {
-		unsigned int sample = msg->nextSample();
+		uint8_t sample = msg->nextSample();
+		if (sample != previousSample) {
+			if (!previousSample) {
+				std::cout <<"{"<< zero << "-0}";
+				onee = 0;
+			} else {
+				std::cout <<"{"<< onee << "-1}";
+				zero = 0;
+			}
+		}
+		if (sample)
+			onee++;
+		else
+			zero++;
 		switch (state) {
 		case PREAMBLE:
 			if (samplesBit) {
@@ -52,9 +67,11 @@ void Decoder::receiveMessage(Message* message) {
 			preambleCounter++;
 			//10101010 10101010
 			if (!previousSample && sample) {
+				//std::cout<<"Rising edge"<<std::endl;
 				//rising edge
 				preambleOnes++;
 			} else if (previousSample && !sample) {
+				//std::cout<<"Falling edge"<<std::endl;
 				//falling edge
 				preambleZeros++;
 				if (PREAMBLE_ZEROS == preambleZeros) {
@@ -62,12 +79,13 @@ void Decoder::receiveMessage(Message* message) {
 
 					//calculate baudrate
 					samplesBit = (preambleCounter) / ((PREAMBLE_LEN * 8) - 1);
-					std::cout << "SamplesPerBit: " << samplesBit << std::endl;
+					std::cout << "SamplesPerBit: " << samplesBit << " preambleCounter " << preambleCounter << std::endl;
 
 					//reset
 					bitCounter = 1;
 					preambleZeros = 0;
 					preambleOnes = 0;
+					preambleCounter = 0;
 				}
 			}
 			break;
@@ -91,6 +109,7 @@ void Decoder::receiveMessage(Message* message) {
 			bitCounter++;
 			if (bitCounter >= samplesBit) {
 				size = (size << 1) | ((sizeCounter > 0) ? 1 : 0);
+				std::cout << "Counter: " << sizeCounter << std::endl;
 				bitCounter = 0;
 				sizeCounter = 0;
 				sizeLen++;
@@ -132,6 +151,7 @@ void Decoder::receiveMessage(Message* message) {
 				preambleOnes = 1;
 				//save time
 			}
+			//std::cout<<sample;
 			break;
 		}
 		if (previousState != state) {
