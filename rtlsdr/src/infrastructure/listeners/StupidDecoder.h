@@ -22,10 +22,14 @@ public:
 	enum DecodeState {
 		MESSAGE, IDLE
 	};
-	StupidDecoder();
+	StupidDecoder(uint64_t sampleFreq);
 	virtual void receiveMessage(Message * message);
 	virtual ~StupidDecoder();
 private:
+	uint64_t sampleFreq;
+	uint32_t samplesPerBit = 0;
+	uint32_t sampleCount = 0;
+	int32_t sampleVal = 0;
 	uint8_t prevSample = 0;
 	uint32_t risingEdge = 0;
 	uint32_t fallingEdge = 0;

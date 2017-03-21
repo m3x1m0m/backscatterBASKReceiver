@@ -14,10 +14,12 @@
 namespace backscatter {
 namespace infrastructure {
 namespace listener {
-
-StupidDecoder::StupidDecoder() {
+#define BAUDRATE 1000
+StupidDecoder::StupidDecoder(uint64_t sampleFreq) :
+		sampleFreq(sampleFreq) {
 	message::ManchEnSampMess msg;
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
+	samplesPerBit = sampleFreq / BAUDRATE;
 	// TODO Auto-generated constructor stub
 
 }
@@ -38,25 +40,17 @@ void StupidDecoder::receiveMessage(Message* message) {
 			bitCount = 0;
 			state = MESSAGE;
 		case MESSAGE:
-			if (sample == prevSample) {
-				bitCount++;
-				if (bitCount > 60) {
-					//we are not sending anymore
-					state = IDLE;
-					std::cout << "\n Rising: " << (int) risingEdge << " Falling: " << (int) fallingEdge << std::endl;
-					risingEdge = 0;
-					fallingEdge = 0;
-					break;
-				}
-			}
-			if (sample != prevSample) {
-				if (sample) {
+			sampleVal += (sample) ? 1 : -1;
+			if (sampleCount == samplesPerBit) {
+				if (sampleVal > 10) {
 					risingEdge++;
+					//we have a 1
+				} else if (sampleVal < -10) {
+					fallingEdge--;
 				} else {
-					fallingEdge++;
+					std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
+					state = IDLE;
 				}
-				std::cout << "{" << (int) sample << " " << (int) bitCount << "}";
-				bitCount = 0;
 			}
 			break;
 		}
