@@ -28,6 +28,8 @@ namespace listener{
 #define MY_COEFFICIENTS_FILE1 (char*)"../filters/low_filter_250e3_10e3.csv"
 #define MY_COEFFICIENTS_FILE2 (char*)"../filters/low_filter_25e3_0.5e3.csv"
 #define MY_DECIMATION_FACTOR 10						// Factor for downsampling
+#define MY_KP 0.8									// Threshold orientated at the maximum signal value
+#define MY_SETPOINT 50								// Setpoint for AGC
 
 //-------------------------------------Typedefs-------------------------------------------------------------------------------
 
@@ -65,6 +67,8 @@ private:
 	void complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor);
 	void downSample(float *inStream, float *outStream, unsigned int length, unsigned int factor);
 	void rectify(cmplsampfl_t *inStream, float *outStream, unsigned int length);
+	void AGC(float *data, unsigned int length);
+	void complexAGC(cmplsampfl_t *data, unsigned int length);
 	unsigned int trigger(float *floatBuffer);
 	cmplsampfl_t convertSample(uint8_t *in_real, uint8_t *in_imag);
 };

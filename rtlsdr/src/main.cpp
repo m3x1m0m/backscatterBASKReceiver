@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 	Demodulator *myDemodulator = new Demodulator(false,(unsigned int)atof(argv[4]), bus);
 	Decoder *myDecoder = new Decoder();
 	bus->addListener(myDemodulator);
-	bus->addListener(myDecoder);
+	//bus->addListener(myDecoder);
 	thread t1(&MessageBus::runLoop, bus);
 	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);
 	char c;

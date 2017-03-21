@@ -93,6 +93,7 @@ void Demodulator::receiveMessage(message::Message* message) {
 		}
 		complexFIR(fastBuffer, coefficientsFilt1, numSamps, numTaps1);						// First filter
 		complexDownSample(fastBuffer, slowBuffer_t, numSamps, MY_DECIMATION_FACTOR);		// Calm your live
+		//complexAGC(slowBuffer_t,numSamps/MY_DECIMATION_FACTOR);
 		dumpCmplx2File(rawFile,slowBuffer_t,numSamps/MY_DECIMATION_FACTOR);
 		rectify(slowBuffer_t,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
 		filterFIR(slowBuffer, coefficientsFilt2, numSamps/MY_DECIMATION_FACTOR, numTaps2);	// Second filter
@@ -273,8 +274,48 @@ void Demodulator::rectify(cmplsampfl_t *inStream, float *outStream, unsigned int
 	// Variables
 
 	// Actions
-	for(unsigned int i=0; i< length; i++)
+	for(unsigned int i=0; i< length; i++){
 		outStream[i] = sqrt(inStream[i].real*inStream[i].real + inStream[i].imag*inStream[i].imag);
+	}
+}
+
+//-------------------------------------AGC---------------------------------------------------------------
+void Demodulator::AGC(float *data, unsigned int length){
+	// Variables
+	float localMax = 0;
+	float error = 0;
+	float steeringValue = 0;
+
+	// Actions
+	for(unsigned int i=0; i< length; i++){						// Find the maximum
+		if(data[i] > localMax)
+			localMax = data[i];
+	}
+	error = MY_SETPOINT-localMax;
+	steeringValue = error*MY_KP;
+	for(unsigned int i=0; i< length; i++){
+			data[i]+=steeringValue;							// Simple p controller
+		}
+}
+//-------------------------------------complexAGC--------------------------------------------------------
+void Demodulator::complexAGC(cmplsampfl_t *data, unsigned int length){
+	// Variables
+	float realMax = 0;
+	float imagMax = 0;
+	float error = 0;
+	float steeringValue = 0;
+
+	// Actions
+	for(unsigned int i=0; i< length; i++){					// Find the maximum
+		if(data[i].real > realMax)
+			realMax = data[i].real;
+		if(data[i].imag > imagMax)
+			imagMax = data[i].imag;
+	}
+	for(unsigned int i=0; i< length; i++){
+			data[i].real+=(MY_SETPOINT-realMax)*MY_KP;		// Simple p controller
+			data[i].imag+=(MY_SETPOINT-imagMax)*MY_KP;
+		}
 }
 //-------------------------------------complexDownSample----------------------------------------------------------------------
 void Demodulator::complexDownSample(cmplsampfl_t *inStream, cmplsampfl_t *outStream, unsigned int length, unsigned int factor){

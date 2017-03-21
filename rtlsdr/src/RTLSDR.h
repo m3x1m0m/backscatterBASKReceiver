@@ -24,7 +24,7 @@ using namespace backscatter::infrastructure;
 
 //-------------------------------------Defines---------------------------------------------------------------------------------
 
-#define MY_BUFFER_LENGTH 500*(2*1024) 										// 2 Bytes per sample (I,Q)
+#define MY_BUFFER_LENGTH 100*(2*1024) 										// 2 Bytes per sample (I,Q)
 
 //-------------------------------------CDemodulator----------------------------------------------------------------------------
 class RTLSDR
