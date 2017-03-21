@@ -41,24 +41,43 @@ void StupidDecoder::receiveMessage(Message* message) {
 			state = MESSAGE;
 			zeroCounter = 0;
 		case MESSAGE:
-			sampleVal += (sample) ? 1 : -1;
-			if (sampleCount == samplesPerBit) {
-				if (sampleVal > 0) {
+			if (prevSample != sample) {
+				if (sample)
 					risingEdge++;
-					zeroCounter = 0;
-					//we have a 1
-				} else if (sampleVal < 0) {
-					fallingEdge--;
-					zeroCounter++;
-				}
-				sampleCount = 0;
-				sampleVal = 0;
-				if (zeroCounter > 2) {
-					std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
+				else
+					fallingEdge++;
+			} else if (!sample) {
+				zeroCounter++;
+				if (zeroCounter >= samplesPerBit * 2) {
+					std::cout << "Rise: " << risingEdge << " fall: "
+							<< fallingEdge << std::endl;
+					fallingEdge = 0;
+					risingEdge = 0;
 					state = IDLE;
 				}
+			}/*
+			 sampleCount++;
+			 sampleVal += (sample) ? 1 : -1;
+			 if (sampleCount == samplesPerBit) {
+			 std::cout<<"sampleVal:"<<sampleVal<<std::endl;
+			 if (sampleVal > 0) {
+			 risingEdge++;
+			 zeroCounter = 0;
+			 //we have a 1
+			 } else if (sampleVal < 0) {
+			 fallingEdge++;
+			 zeroCounter++;
+			 }
+			 sampleCount = 0;
+			 sampleVal = 0;
+			 if (zeroCounter > 2) {
+			 std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
+			 fallingEdge=0;
+			 risingEdge=0;
+			 state = IDLE;
+			 }
 
-			}
+			 }*/
 			break;
 		}
 		prevSample = sample;
