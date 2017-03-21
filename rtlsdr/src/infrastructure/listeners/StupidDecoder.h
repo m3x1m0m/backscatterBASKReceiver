@@ -35,6 +35,8 @@ private:
 	uint32_t fallingEdge = 0;
 	uint32_t bitCount = 0;
 	uint32_t zeroCounter = 0;
+	uint32_t totalZero = 0, totalOne = 0;
+	std::vector<uint32_t> risingEdges;
 	DecodeState state = IDLE;
 };
 

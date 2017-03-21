@@ -19,7 +19,7 @@ StupidDecoder::StupidDecoder(uint64_t sampleFreq) :
 		sampleFreq(sampleFreq) {
 	message::ManchEnSampMess msg;
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
-	samplesPerBit = sampleFreq / BAUDRATE;
+	samplesPerBit = (sampleFreq / 10) / BAUDRATE;
 	// TODO Auto-generated constructor stub
 
 }
@@ -37,47 +37,47 @@ void StupidDecoder::receiveMessage(Message* message) {
 			if (!sample) {
 				break;
 			}
-			bitCount = 0;
+			bitCount++;
+			if (bitCount < 5 * samplesPerBit) {
+				break;
+			}
+			bitCount = 1;
 			state = MESSAGE;
 			zeroCounter = 0;
+			break;
 		case MESSAGE:
+			if (!sample) {
+				totalZero++;
+			} else {
+				totalOne++;
+			}
 			if (prevSample != sample) {
-				if (sample)
+				zeroCounter = 0;
+				if (sample) {
 					risingEdge++;
-				else
+				} else {
 					fallingEdge++;
+				}
 			} else if (!sample) {
 				zeroCounter++;
 				//std::cout << "Zero: " << (int)zeroCounter <<" samplesPerBit: " << (int)samplesPerBit<< std::endl;
-				if (zeroCounter >= samplesPerBit * 10) {
-					std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
+				if (zeroCounter >= samplesPerBit * 20 && risingEdge > 80) {
+					uint32_t averageError = 0;
+					if (risingEdge > 10)
+						risingEdges.push_back(risingEdge);
+					for (uint32_t i : risingEdges) {
+						averageError += i;
+					}
+					if (risingEdges.size())
+						averageError /= risingEdges.size();
+					printf("Rise: %d fall: %d ones %d zeros %d average: %d\n", risingEdge, fallingEdge, totalOne, (totalZero - samplesPerBit * 25), averageError);
 					fallingEdge = 0;
 					risingEdge = 0;
+					totalOne = 0;
+					totalZero = 0;
 					state = IDLE;
 				}
-			}/*
-			 sampleCount++;
-			 sampleVal += (sample) ? 1 : -1;
-			 if (sampleCount == samplesPerBit) {
-			 std::cout<<"sampleVal:"<<sampleVal<<std::endl;
-			 if (sampleVal > 0) {
-			 risingEdge++;
-			 zeroCounter = 0;
-			 //we have a 1
-			 } else if (sampleVal < 0) {
-			 fallingEdge++;
-			 zeroCounter++;
-			 }
-			 sampleCount = 0;
-			 sampleVal = 0;
-			 if (zeroCounter > 2) {
-			 std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
-			 fallingEdge=0;
-			 risingEdge=0;
-			 state = IDLE;
-			 }
-
-			 }*/
+			}
 			break;
 		}
 		prevSample = sample;
