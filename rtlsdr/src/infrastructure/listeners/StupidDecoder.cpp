@@ -48,9 +48,9 @@ void StupidDecoder::receiveMessage(Message* message) {
 					fallingEdge++;
 			} else if (!sample) {
 				zeroCounter++;
-				if (zeroCounter >= samplesPerBit * 2) {
-					std::cout << "Rise: " << risingEdge << " fall: "
-							<< fallingEdge << std::endl;
+				//std::cout << "Zero: " << (int)zeroCounter <<" samplesPerBit: " << (int)samplesPerBit<< std::endl;
+				if (zeroCounter >= samplesPerBit * 10) {
+					std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
 					fallingEdge = 0;
 					risingEdge = 0;
 					state = IDLE;
