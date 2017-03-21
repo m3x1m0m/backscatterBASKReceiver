@@ -87,7 +87,7 @@ void Demodulator::receiveMessage(message::Message* message) {
 		while(i<msg_recv->getSize()){
 			real=msg_recv->removeSample();
 			imag=msg_recv->removeSample();
-			fastBuffer[j] = convertSample(&real,&imag);									// Convert sample
+			fastBuffer[j] = convertSample(&real,&imag);										// Convert sample
 			i+=2;
 			j++;
 		}
