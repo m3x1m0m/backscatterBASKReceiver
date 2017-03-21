@@ -39,18 +39,23 @@ void StupidDecoder::receiveMessage(Message* message) {
 			}
 			bitCount = 0;
 			state = MESSAGE;
+			zeroCounter = 0;
 		case MESSAGE:
 			sampleVal += (sample) ? 1 : -1;
 			if (sampleCount == samplesPerBit) {
-				if (sampleVal > 10) {
+				if (sampleVal > 0) {
 					risingEdge++;
+					zeroCounter = 0;
 					//we have a 1
-				} else if (sampleVal < -10) {
+				} else if (sampleVal < 0) {
 					fallingEdge--;
-				} else {
+					zeroCounter++;
+				}
+				if (zeroCounter > 2) {
 					std::cout << "Rise: " << risingEdge << " fall: " << fallingEdge << std::endl;
 					state = IDLE;
 				}
+
 			}
 			break;
 		}

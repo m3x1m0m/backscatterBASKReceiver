@@ -34,6 +34,7 @@ private:
 	uint32_t risingEdge = 0;
 	uint32_t fallingEdge = 0;
 	uint32_t bitCount = 0;
+	uint8_t zeroCounter = 0;
 	DecodeState state = IDLE;
 };
 
