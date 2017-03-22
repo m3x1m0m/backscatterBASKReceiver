@@ -32,6 +32,12 @@
 		M3 = zeros(1,N);
 		P3 = M3(1:n:end);
 
+		f = figure;
+		%gp = uibuttongroup (f, "Position", [ 0 0.5 1 1])
+		%b1 = uicontrol (gp, "style", "radiobutton", ...
+                %"string", "Choice 1", ...
+                %"Position", [ 10 150 100 50 ]);
+		
 		osciRaw = subplot(3,1,1);		% Generate subplots
 		plot(t,P1);
 		grid on;
@@ -84,6 +90,6 @@
 			axis(osciFilt,[0 refresh_rate*1e3 minFiltered maxFiltered]);
 			axis(osciBin,[0 refresh_rate*1e3 0 1.1]);
 			offset = offset + 1;
-			sum=sum+length(P2)
+			sum=sum+length(P2);
 			pause(refresh_rate);			
 		end

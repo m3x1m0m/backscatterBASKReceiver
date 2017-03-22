@@ -52,6 +52,7 @@ void MessageBus::runLoop(void) {
 			std::cout << "message == null" << std::endl;
 			break;
 		} else {
+			//std::cout << "Messages in queue: " << messageQueue.size() << std::endl;
 			for (std::vector<listener::Listener *>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
 				if ((*it)->isSensitive(message)) {
 					(*it)->receiveMessage(message);

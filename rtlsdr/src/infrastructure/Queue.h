@@ -13,7 +13,6 @@
 namespace backscatter {
 namespace infrastructure {
 
-
 template<typename T>
 class Queue {
 public:
@@ -49,6 +48,10 @@ public:
 		queue_.push(std::move(item));
 		mlock.unlock();
 		cond_.notify_one();
+	}
+
+	size_t size() {
+		return queue_.size();
 	}
 
 private:

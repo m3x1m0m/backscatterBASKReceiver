@@ -31,7 +31,7 @@ public:
 private:
 	uint8_t manToDec(uint16_t man);
 	int calculateBaudrate(ManchEnSampMess * message);
-	int8_t previousSample;
+	uint8_t previousSample;
 	uint64_t sampleBuffer;
 	uint64_t sampleBufferLen;
 	uint64_t sync;
