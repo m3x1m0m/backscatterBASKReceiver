@@ -140,7 +140,8 @@ int prn_sendOnes(uint8_t *data, int len) {
     int i=0;
 
 
-    while (i < len){//writing the data
+    while (i < len){
+        // Just write 1s which will be encoded to 101010...
         data[i] = 0xFF;
         i++;
     }

@@ -14,7 +14,7 @@
 namespace backscatter {
 namespace infrastructure {
 namespace listener {
-#define BAUDRATE 1000
+
 StupidDecoder::StupidDecoder(uint64_t sampleFreq) :
 		sampleFreq(sampleFreq) {
 	message::ManchEnSampMess msg;
@@ -62,15 +62,18 @@ void StupidDecoder::receiveMessage(Message* message) {
 				zeroCounter++;
 				//std::cout << "Zero: " << (int)zeroCounter <<" samplesPerBit: " << (int)samplesPerBit<< std::endl;
 				if (zeroCounter >= samplesPerBit * 20 && risingEdge > 80) {
-					uint32_t averageError = 0;
-					if (risingEdge > 10)
+					uint32_t averageError = 0;										// End of one package reached
+					//if (risingEdge > 10)
 						risingEdges.push_back(risingEdge);
 					for (uint32_t i : risingEdges) {
 						averageError += i;
 					}
-					if (risingEdges.size())
-						averageError /= risingEdges.size();
-					printf("Rise: %d fall: %d ones %d zeros %d average: %d\n", risingEdge, fallingEdge, totalOne, (totalZero - samplesPerBit * 25), averageError);
+					if (risingEdges.size() >= NUMBER_OF_FRAMES){
+						averageError /= NUMBER_OF_FRAMES;
+						std::cout << "Decoder: Average BER over the last "<< NUMBER_OF_FRAMES << " messages is " << (float)(1-((float)averageError/(float)ONES_EXPECTED)) << "." << std::endl;
+						//printf("Rise: %d fall: %d ones %d zeros %d average: %d\n", risingEdge, fallingEdge, totalOne, (totalZero - samplesPerBit * 25), averageError);
+						risingEdges.erase(risingEdges.begin(), risingEdges.end());	// Empty the vector
+					}
 					fallingEdge = 0;
 					risingEdge = 0;
 					totalOne = 0;
