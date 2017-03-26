@@ -13,28 +13,38 @@
 
 #include "infrastructure/listeners/Demodulator.h"
 #include "infrastructure/listeners/StupidDecoder.h"
-#include "RTLSDR.h"
+#include "RTLSDRSim.h"
 
 using namespace std;
 using namespace backscatter;
 using namespace backscatter::infrastructure;
-	using namespace backscatter::infrastructure::listener;
+using namespace backscatter::infrastructure::listener;
 
 int main(int argc, char* argv[]) {
+	//Variables
+	unsigned int fsamp, ftuned, gain, threshold;
+
+	// Action
 	if(argc < 5){
 		cout << "Wrong usage! Right usage: " << endl;
 		cout << "./rtlsdr fsamp ftuned gain threshold" << endl;
 		return 1;
 	}
 
+	fsamp = (unsigned int)atof(argv[1]);
+	ftuned = (unsigned int)atof(argv[2]);
+	gain = 10*(unsigned int)atof(argv[3]);
+	threshold = (unsigned int)atof(argv[4]);
+
 	MessageBus *bus = new MessageBus();
-	RTLSDR myRTLSDR((unsigned int)atof(argv[1]), (unsigned int)atof(argv[2]), 10*(unsigned int)atof(argv[3]), bus);
-	Demodulator *myDemodulator = new Demodulator(false,(unsigned int)atof(argv[4]), bus);
+	//RTLSDR myRTLSDR(fsamp, ftuned, gain, bus);
+	RTLSDRSim myRTLSDR(bus,fsamp);
+	Demodulator *myDemodulator = new Demodulator(false,threshold, bus);
 	//Decoder *myDecoder = new Decoder();
 	bus->addListener(myDemodulator);
-	bus->addListener(new StupidDecoder((unsigned int)atof(argv[1])));
+	//bus->addListener(new StupidDecoder((unsigned int)atof(argv[1])));
 	thread t1(&MessageBus::runLoop, bus);
-	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);
+	thread t2(&RTLSDRSim::continuousReadout, &myRTLSDR,true,10);
 	char c;
 	cin >> c;
 	while (bus->isRunning());

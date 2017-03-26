@@ -1,51 +1,63 @@
-/*
- * EasyDecoder.cpp
- *
- *  Created on: Mar 25, 2017
- *      Author: maximilian
- */
+//-----------------------------------------------------------------------------------------------------------------------------
+// Project:    	Backscatter BPSK Receiver
+// Name:		EasyDecoder.cpp
+// Author:		Maximilian Stiefel
+// Date:		26.03.2017
+//
+// Description:
+//
+//-----------------------------------------------------------------------------------------------------------------------------
 
+//-------------------------------------Libraries-------------------------------------------------------------------------------
 #include "EasyDecoder.h"
 #include "../messages/MessageTypes.h"
 #include "../messages/ManchEnSampMess.h"
 #include "../messages/PacketMess.h"
 #include <ctime>
 
+//-------------------------------------Namespaces-----------------------------------------------------------------------------
 namespace backscatter {
 namespace infrastructure {
 namespace listener {
 
-EasyDecoder::EasyDecoder(uint64_t sampleFreq) :
-		sampleFreq(sampleFreq), expectedMsgSize(EXPECTED_MSG_SIZE), numOnes(0), bitCnt(0), sampCnt(0), state(NOT_IN_SYNC), silence(true){
+//-------------------------------------Constructor----------------------------------------------------------------------------
+EasyDecoder::EasyDecoder(void) :
+		sampleFreq(0), expectedMsgSize(EXPECTED_MSG_SIZE), numOnes(0), bitCnt(0), sampCnt(0), state(NOT_IN_SYNC),
+		silence(true), samplesPerBit(0), bitThreshold(0), initialized(false){
 	message::ManchEnSampMess msg;
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
-	samplesPerBit = (sampleFreq / 10) / BAUDRATE;
-	bitThreshold = (samplesPerBit*0.6);
-	std::cout << "Decoder: bitThreshold-" << bitThreshold << " samplesPerBit-" << samplesPerBit << std::endl;
-
 }
 
+//-------------------------------------Destructor-----------------------------------------------------------------------------
 EasyDecoder::~EasyDecoder() {
 	// TODO Auto-generated destructor stub
 }
 
-
+//-------------------------------------receiveMessage-------------------------------------------------------------------------
 void EasyDecoder::receiveMessage(Message* message) {
 	ManchEnSampMess * msg = (ManchEnSampMess *) message;
 	uint8_t currentBit = 0;
 	uint8_t indicator = 1;
 
+	if(!initialized){													// This code is executed after each message
+		samplesPerBit = msg->getSampleRate() / BAUDRATE;
+		bitThreshold = (samplesPerBit*MY_BIT_THRESHOLD);
+		std::cout << "Decoder: bitThreshold-" << bitThreshold << " samplesPerBit-" << samplesPerBit << std::endl;
+		recvData.empty();												// Empty message vector
+		initialized = true;
+	}
+
 	while (msg->hasSample()) {
-		currentBit = msg->nextSample();
+		currentBit = msg->nextSample();									// get a single sample
 		switch (state) {
 		case NOT_IN_SYNC:												// The receiver might be turned on while a package is sent
-			sampCnt++;
+			sampCnt++;													// The decoder will be stuck in this state as long as there is no silence at least for 5 bits
 			if(currentBit)
 				numOnes++;
 			if(sampCnt == samplesPerBit){
 				bitCnt++;
 				if(numOnes >= bitThreshold)								// A one has been detected
-					silence = false;
+					silence = false;									// The silence has been broken
 				sampCnt = 0;
 				numOnes = 0;
 			}
@@ -61,7 +73,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 			sampCnt++;
 			if(currentBit)
 				numOnes++;
-			if(sampCnt == samplesPerBit){
+			if(sampCnt == samplesPerBit){								// A single one indicates the start
 				if(numOnes >= bitThreshold)
 					state = MESSAGE;									// Expect message now
 				else
@@ -84,10 +96,21 @@ void EasyDecoder::receiveMessage(Message* message) {
 			}
 			if(recvData.size() >= expectedMsgSize){
 				state = IDLE;											// One message has been sent
-			}															// Back to idle
+				initialized = false;									// Calculate sampPerBit etc. again
+				printData();
+			}
+
 			break;
 		}
 	}
+}
+
+//-------------------------------------printMessage---------------------------------------------------------------------------
+void EasyDecoder::printData(void) {
+	std::cout << "Decoder: Received data-";
+	for(int i=0; i<recvData.size(); i++)
+		std::cout << recvData[i];
+	std::cout << std::endl;
 }
 
 } /* namespace listener */

@@ -39,7 +39,7 @@ Demodulator::Demodulator(bool idebug, float ithreshold, MessageBus* ibus):Listen
 	std::cout << "First filter has " << numTaps1 << " taps." << std::endl;
 	std::cout << "Second filter has " << numTaps2 << " taps." << std::endl;
 
-	rawFile.open(MY_RAW_FILE, std::ios::out);								// Open files for logging
+	rawFile.open(MY_RAW_FILE, std::ios::out);												// Open files for logging
 	filteredFile.open(MY_FILTERED_FILE, std::ios::out);
 	binaryFile.open(MY_BINARY_FILE, std::ios::out);
 
