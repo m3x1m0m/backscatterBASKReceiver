@@ -14,6 +14,8 @@
 #include <istream>
 #include <string>
 #include <sstream>
+#include <chrono>
+#include <thread>
 #ifndef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +27,9 @@
 namespace backscatter {
 using namespace backscatter::infrastructure;
 using namespace backscatter::infrastructure::message;
+using namespace std::this_thread; // sleep_for, sleep_until
+using namespace std::chrono; // nanoseconds, system_clock, seconds
+
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
 RTLSDRSim::RTLSDRSim(MessageBus* iBus, unsigned int isampRate):
@@ -112,6 +117,7 @@ void RTLSDRSim::continuousReadout(bool repeat, unsigned int zeroPadFact){
 		msgBus->pushMessage(msg);
 		std::cout << "RTLSDRSim: Pushed samples to bus." << std::endl;
 		std::cout << "RTLSDRSim: Nu. of 8 Bit vals-" << i << std::endl;
+		sleep_until(system_clock::now() + milliseconds(1000));								// Periodic task
 	}
 
 }

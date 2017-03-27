@@ -98,7 +98,7 @@ void Demodulator::receiveMessage(message::Message* message) {
 		rectify(slowBuffer_t,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
 		filterFIR(slowBuffer, coefficientsFilt2, numSamps/MY_DECIMATION_FACTOR, numTaps2);	// Second filter
 		dumpFloats2File(filteredFile,slowBuffer,numSamps/MY_DECIMATION_FACTOR);
-		msg_2send = new ManchEnSampMess(msg_recv->getSampleRate(), numSamps/MY_DECIMATION_FACTOR);
+		msg_2send = new ManchEnSampMess(msg_recv->getSampleRate()/MY_DECIMATION_FACTOR, numSamps/MY_DECIMATION_FACTOR);
 		for(unsigned int m=0;m<numSamps/MY_DECIMATION_FACTOR;m++){
 			intBuffer[m] = trigger(&slowBuffer[m]);
 			msg_2send->addSample(intBuffer[m]);

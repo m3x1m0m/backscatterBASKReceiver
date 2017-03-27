@@ -23,7 +23,7 @@ namespace listener {
 //-------------------------------------Constructor----------------------------------------------------------------------------
 EasyDecoder::EasyDecoder(void) :
 		sampleFreq(0), expectedMsgSize(EXPECTED_MSG_SIZE), numOnes(0), bitCnt(0), sampCnt(0), state(NOT_IN_SYNC),
-		silence(true), samplesPerBit(0), bitThreshold(0), initialized(false){
+		silence(true), samplesPerBit(0), bitThreshold(0), initialized(false), sumSamp(0){
 	message::ManchEnSampMess msg;
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
 }
@@ -37,47 +37,53 @@ EasyDecoder::~EasyDecoder() {
 void EasyDecoder::receiveMessage(Message* message) {
 	ManchEnSampMess * msg = (ManchEnSampMess *) message;
 	uint8_t currentBit = 0;
-	uint8_t indicator = 1;
 
 	if(!initialized){													// This code is executed after each message
 		samplesPerBit = msg->getSampleRate() / BAUDRATE;
 		bitThreshold = (samplesPerBit*MY_BIT_THRESHOLD);
 		std::cout << "Decoder: bitThreshold-" << bitThreshold << " samplesPerBit-" << samplesPerBit << std::endl;
-		recvData.empty();												// Empty message vector
+		recvData.clear();												// Empty message vector
+		sumSamp = 0;
 		initialized = true;
 	}
 
 	while (msg->hasSample()) {
 		currentBit = msg->nextSample();									// get a single sample
+		sumSamp++;
 		switch (state) {
 		case NOT_IN_SYNC:												// The receiver might be turned on while a package is sent
+			//std::cout << "N ";
 			sampCnt++;													// The decoder will be stuck in this state as long as there is no silence at least for 5 bits
 			if(currentBit)
 				numOnes++;
 			if(sampCnt == samplesPerBit){
 				bitCnt++;
 				if(numOnes >= bitThreshold)								// A one has been detected
-					silence = false;									// The silence has been broken
+					silence = false;									// The silence has been disturbed
 				sampCnt = 0;
 				numOnes = 0;
 			}
 			if(bitCnt >= 5){
 				bitCnt = 0;
-				if(silence)
+				if(silence){
 					state = IDLE;										// Silence for 5 bits -> no transmission ongoing
+					std::cout << "Decoder: NOT_IN_SYNC->IDLE, sumSamp-" << sumSamp << std::endl ;
+				}
 				else
 					silence = true;										// New chance
 			}
 			break;
 		case IDLE:
+			//std::cout << "I ";
 			sampCnt++;
 			if(currentBit)
 				numOnes++;
 			if(sampCnt == samplesPerBit){								// A single one indicates the start
-				if(numOnes >= bitThreshold)
+				if(numOnes >= bitThreshold){
 					state = MESSAGE;									// Expect message now
-				else
-																		// Just noise
+					std::cout << "Decoder: IDLE->MESSAGE, sumSamp-" << sumSamp << std::endl ;
+				}
+				//else													// Just noise
 				sampCnt = 0;
 				numOnes = 0;
 			}
@@ -95,7 +101,8 @@ void EasyDecoder::receiveMessage(Message* message) {
 				sampCnt = 0;
 			}
 			if(recvData.size() >= expectedMsgSize){
-				state = IDLE;											// One message has been sent
+				state = NOT_IN_SYNC;											// One message has been sent
+				std::cout << "Decoder: MESSAGE->NOT_IN_SYNC, sumSamp-" << sumSamp << std::endl ;
 				initialized = false;									// Calculate sampPerBit etc. again
 				printData();
 			}

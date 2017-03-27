@@ -35,7 +35,7 @@ namespace listener {
 class EasyDecoder: public Listener {
 public:
 	enum DecodeState {
-		MESSAGE, IDLE, POSSIBLE_START, NOT_IN_SYNC
+		MESSAGE, IDLE, NOT_IN_SYNC
 	};
 	EasyDecoder(void);
 	unsigned int incRing(unsigned int index, unsigned int size);
@@ -54,6 +54,7 @@ private:
 	std::vector<unsigned int> recvData;
 	bool silence;
 	bool initialized;
+	unsigned int sumSamp;
 };
 
 } /* namespace listener */

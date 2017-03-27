@@ -1,19 +1,18 @@
 //----------------------------------------------------------------------------------------------------------------------------
 // Project:    	Backscatter BPSK Receiver
-// Name:		RTLSDRSim.h
+// Name:		DemodulatorSim.h
 // Author:		Maximilian Stiefel
-// Date:		26.03.2017
+// Date:		27.03.2017
 //
 // Description:
 //
 //----------------------------------------------------------------------------------------------------------------------------
 
-
-#ifndef RTLSDRSIM_H_
-#define RTLSDRSIM_H_
+#ifndef DEMODULATORSIM_H_
+#define DEMODULATORSIM_H_
 
 //-------------------------------------Libraries-------------------------------------------------------------------------------
-#include "infrastructure/messages/RawSampMess.h"
+#include "infrastructure/messages/ManchEnSampMess.h"
 #include "infrastructure/MessageBus.h"
 
 //-------------------------------------Namespaces-------------------------------------------------------------------------------
@@ -23,27 +22,35 @@ using namespace backscatter::infrastructure;
 
 //-------------------------------------Defines---------------------------------------------------------------------------------
 
-#define MY_MSG_SIZE 100*(2*1024) 											// 2 Bytes per sample (I,Q)
-#define MY_TEST_CASE "../samples/sim_test_2.csv"
+#define MSG_SIZE 100*(2*1024) 											// 2 Bytes per sample (I,Q)
+#define FRAME_SIZE 512 													// Frame size in bit
+#define PAUSE_LENGTH_MS 300 											// Length of pause between packages in ms
+#define BAUDRATE 1000
+#define SAMP_RATE 25e3
+#define TASK_PERIOD_MS 1000
+
+#define SAMP_PER_BIT (unsigned int)(SAMP_RATE/BAUDRATE)
+#define SAMP_PER_PAUSE (SAMP_RATE*(PAUSE_LENGTH_MS/1000.0))
+#define BUFFER_LENGTH (unsigned int)(SAMP_PER_BIT*FRAME_SIZE + SAMP_PER_PAUSE)		// Buffer length
 
 //-------------------------------------CDemodulator----------------------------------------------------------------------------
-class RTLSDRSim
+class DemodulatorSim
 {
 public:
-	RTLSDRSim(MessageBus* iBus, unsigned int isampRate);
-	~RTLSDRSim();
-	void continuousReadout(bool repeat, unsigned int zeroPadFact);
+	DemodulatorSim(MessageBus* iBus, unsigned int inumMsg, unsigned int iIndex);
+	~DemodulatorSim();
+	void continuousReadout();
 	void initializeBuffer();
 	bool incRingBuf();
 private:
 	MessageBus *msgBus;
-	uint8_t *buffer;															// Buffer where the data which shall be sent is stored
-	unsigned int bufferLength;
-	unsigned int sampRate;
+	unsigned int buffer[BUFFER_LENGTH];									// Buffer where the data which shall be sent is stored
 	unsigned int bufIndex;
+	unsigned int msgCnt;
+	unsigned int numMsg;
 };
 } /* namespace backscatter */
 
 
 
-#endif /* RTLSDRSIM_H_ */
+#endif /* DEMODULATORSIM_H_ */
