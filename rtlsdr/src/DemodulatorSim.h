@@ -31,7 +31,7 @@ using namespace backscatter::infrastructure;
 
 #define SAMP_PER_BIT (unsigned int)(SAMP_RATE/BAUDRATE)
 #define SAMP_PER_PAUSE (SAMP_RATE*(PAUSE_LENGTH_MS/1000.0))
-#define BUFFER_LENGTH (unsigned int)(SAMP_PER_BIT*FRAME_SIZE + SAMP_PER_PAUSE)		// Buffer length
+#define BUFFER_LENGTH (unsigned int)(SAMP_PER_BIT*FRAME_SIZE + SAMP_PER_PAUSE)// Buffer length
 
 //-------------------------------------CDemodulator----------------------------------------------------------------------------
 class DemodulatorSim

@@ -41,6 +41,7 @@ public:
 	unsigned int incRing(unsigned int index, unsigned int size);
 	void printData(void);
 	virtual void receiveMessage(Message * message);
+	unsigned int blingOracle(void);
 	virtual ~EasyDecoder();
 private:
 	unsigned int sampleFreq;

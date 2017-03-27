@@ -42,7 +42,7 @@ DemodulatorSim::DemodulatorSim(MessageBus* iBus, unsigned int inumMsg, unsigned 
 void DemodulatorSim::initializeBuffer(){
 	//Variables
 	bool what = true;
-	unsigned int deb = 0;
+	//unsigned int deb = 0;
 
 	//Action
 	for(unsigned int i = 0; i < BUFFER_LENGTH; i++){						// Write pause samples first everywhere
@@ -52,16 +52,16 @@ void DemodulatorSim::initializeBuffer(){
 	for(unsigned int i = 0; i < FRAME_SIZE; i++){							// Write simple message samples 1010101...
 		for(unsigned int j = 0; j < SAMP_PER_BIT; j++){
 			what ? buffer[i*SAMP_PER_BIT + j] = 1 : buffer[i*SAMP_PER_BIT + j] = 0;
-			deb++;
+			//deb++;
 		}
 		what = !what;
 	}
-	std::cout << "DemodulatorSim: " ;
+	/*std::cout << "DemodulatorSim: " ;
 	for(unsigned int i = 0; i < BUFFER_LENGTH; i++){
 			std::cout << buffer[i];
 	}
 	std::cout << std::endl ;
-	std::cout << "Deb: " << deb << std::endl;
+	std::cout << "Deb: " << deb << std::endl;*/
 }
 //-------------------------------------Destructor-----------------------------------------------------------------------------
 DemodulatorSim::~DemodulatorSim() {
@@ -93,11 +93,14 @@ void DemodulatorSim::continuousReadout(){
 	while(msgCnt<numMsg){
 		msg = new ManchEnSampMess(SAMP_RATE, len);
 		i = 0;
+		std::cout << "DemodulatorSim:";
 		while (i < len){
 			i++;
 			msg->addSample(buffer[bufIndex]);
 			incRingBuf();															// Increase bufIndex ring buffer style
+			std::cout << buffer[bufIndex];
 		}
+		std::cout << std::endl;
 		msgBus->pushMessage(msg);
 		msgCnt++;
 		std::cout << "DemodulatorSim: Pushed samples to bus." << std::endl;

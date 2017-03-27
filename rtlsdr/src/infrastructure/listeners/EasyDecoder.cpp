@@ -37,6 +37,7 @@ EasyDecoder::~EasyDecoder() {
 void EasyDecoder::receiveMessage(Message* message) {
 	ManchEnSampMess * msg = (ManchEnSampMess *) message;
 	uint8_t currentBit = 0;
+	unsigned int errors = 0;
 
 	if(!initialized){													// This code is executed after each message
 		samplesPerBit = msg->getSampleRate() / BAUDRATE;
@@ -44,6 +45,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 		std::cout << "Decoder: bitThreshold-" << bitThreshold << " samplesPerBit-" << samplesPerBit << std::endl;
 		recvData.clear();												// Empty message vector
 		sumSamp = 0;
+		errors = 0;
 		initialized = true;
 	}
 
@@ -82,6 +84,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 				if(numOnes >= bitThreshold){
 					state = MESSAGE;									// Expect message now
 					std::cout << "Decoder: IDLE->MESSAGE, sumSamp-" << sumSamp << std::endl ;
+					recvData.push_back(1);								// This was obviously the first 1
 				}
 				//else													// Just noise
 				sampCnt = 0;
@@ -101,7 +104,9 @@ void EasyDecoder::receiveMessage(Message* message) {
 				sampCnt = 0;
 			}
 			if(recvData.size() >= expectedMsgSize){
-				state = NOT_IN_SYNC;											// One message has been sent
+				state = NOT_IN_SYNC;									// One message has been sent
+				errors = blingOracle();
+				std::cout << "Decoder: BER is " << ((float)errors/(float)EXPECTED_MSG_SIZE)*100.0 << "%" << std::endl ;
 				std::cout << "Decoder: MESSAGE->NOT_IN_SYNC, sumSamp-" << sumSamp << std::endl ;
 				initialized = false;									// Calculate sampPerBit etc. again
 				printData();
@@ -118,6 +123,19 @@ void EasyDecoder::printData(void) {
 	for(int i=0; i<recvData.size(); i++)
 		std::cout << recvData[i];
 	std::cout << std::endl;
+}
+//-------------------------------------printMessage---------------------------------------------------------------------------
+unsigned int EasyDecoder::blingOracle(void) {
+	unsigned int expectedVal = 1;
+	unsigned int errors = 0;
+
+	for(unsigned int i = 0; i<recvData.size(); i++)
+	{
+		if(recvData[i] != expectedVal)
+			errors++;
+		expectedVal = !expectedVal;											// Detects 101010101 ...
+	}
+	return errors;
 }
 
 } /* namespace listener */
