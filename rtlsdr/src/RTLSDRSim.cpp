@@ -32,8 +32,8 @@ using namespace std::chrono; // nanoseconds, system_clock, seconds
 
 
 //-------------------------------------Constructor----------------------------------------------------------------------------
-RTLSDRSim::RTLSDRSim(MessageBus* iBus, unsigned int isampRate):
-		msgBus(iBus), buffer(NULL), bufferLength(0), sampRate(isampRate), bufIndex(0){
+RTLSDRSim::RTLSDRSim(MessageBus* iBus, unsigned int isampRate, bool irepeat, unsigned int izeroPadFact):
+		msgBus(iBus), buffer(NULL), bufferLength(0), sampRate(isampRate), bufIndex(0), repeat(irepeat), zeroPadFact(izeroPadFact){
 	// Variables
 
 	// Action
@@ -84,7 +84,7 @@ bool RTLSDRSim::incRingBuf() {
 }
 
 //-------------------------------------continuousReadout----------------------------------------------------------------------
-void RTLSDRSim::continuousReadout(bool repeat, unsigned int zeroPadFact){
+void RTLSDRSim::continuousReadout(){
 	// Variables
 	unsigned int len = MY_MSG_SIZE;
 	RawSampMess *msg;

@@ -30,9 +30,9 @@ using namespace backscatter::infrastructure;
 class RTLSDRSim
 {
 public:
-	RTLSDRSim(MessageBus* iBus, unsigned int isampRate);
+	RTLSDRSim(MessageBus* iBus, unsigned int isampRate, bool irepeat, unsigned int izeroPadFact);
 	~RTLSDRSim();
-	void continuousReadout(bool repeat, unsigned int zeroPadFact);
+	void continuousReadout();
 	void initializeBuffer();
 	bool incRingBuf();
 private:
@@ -41,6 +41,8 @@ private:
 	unsigned int bufferLength;
 	unsigned int sampRate;
 	unsigned int bufIndex;
+	bool repeat;
+	unsigned int zeroPadFact;
 };
 } /* namespace backscatter */
 

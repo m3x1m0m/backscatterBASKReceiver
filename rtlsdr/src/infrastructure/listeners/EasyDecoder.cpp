@@ -38,6 +38,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 	ManchEnSampMess * msg = (ManchEnSampMess *) message;
 	uint8_t currentBit = 0;
 	unsigned int errors = 0;
+	unsigned int expectation = 1;
 
 	while (msg->hasSample()) {
 		if(!initialized){												// This code is executed after each message
@@ -47,6 +48,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 			recvData.clear();											// Empty message vector
 			sumSamp = 0;
 			errors = 0;
+			expectation = 1;
 			initialized = true;
 		}
 		currentBit = msg->nextSample();									// get a single sample
@@ -79,15 +81,32 @@ void EasyDecoder::receiveMessage(Message* message) {
 			sampCnt++;
 			if(currentBit)
 				numOnes++;
-			if(sampCnt == samplesPerBit){								// A single one indicates the start
-				if(numOnes >= bitThreshold){
-					state = MESSAGE;									// Expect message now
-					std::cout << "Decoder: IDLE->MESSAGE, sumSamp-" << sumSamp << std::endl ;
-					recvData.push_back(1);								// This was obviously the first 1
+			if(sampCnt == samplesPerBit){
+				if(numOnes >= bitThreshold){							// A 1 has been detected
+					if(expectation){									// Was it supposed to be detected?
+						bitCnt++;
+						expectation = 0;
+					}
+					else
+						bitCnt = 0;
 				}
-				//else													// Just noise
+				else{													// A 0 has been detected
+					if(!expectation){									// Was it supposed to be detected?
+						bitCnt++;
+						expectation = 1;								// A 1 is the next thing to be expected
+					}
+					else
+						bitCnt = 0;
+				}
 				sampCnt = 0;
 				numOnes = 0;
+			}
+			if(bitCnt == PREAMBLE_LENGTH){								// Preamble has been detected
+				state = MESSAGE;										// Message follow now
+				std::cout << "Decoder: MESSAGE->IDLE, sumSamp-" << sumSamp << std::endl;
+				for(unsigned int i = 0; i < PREAMBLE_LENGTH; i++)		// Add preamble to data
+					recvData.push_back(!(i%2));
+				bitCnt = 0;
 			}
 			break;
 		case MESSAGE:

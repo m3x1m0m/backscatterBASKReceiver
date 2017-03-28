@@ -11,7 +11,7 @@
 #include <iostream>
 #include <thread>
 
-#include "DemodulatorSim.h"
+#include "./infrastructure/listeners/Demodulator.h"
 #include "infrastructure/listeners/EasyDecoder.h"
 #include "RTLSDRSim.h"
 
@@ -38,13 +38,14 @@ int main(int argc, char* argv[]) {
 
 	MessageBus *bus = new MessageBus();
 	//RTLSDR myRTLSDR(fsamp, ftuned, gain, bus);
-	DemodulatorSim myDemodulator(bus,1,80);
-	//Demodulator *myDemodulator = new Demodulator(false,threshold, bus);
+	RTLSDRSim myRTLSDR(bus, fsamp, false, 10);
+	//DemodulatorSim myDemodulator(bus,1,80);
+	Demodulator *myDemodulator = new Demodulator(false,threshold, bus);
 	EasyDecoder *myDecoder = new EasyDecoder();
-	//bus->addListener(myDemodulator);
+	bus->addListener(myDemodulator);
 	bus->addListener(myDecoder);
 	thread t1(&MessageBus::runLoop, bus);
-	thread t2(&DemodulatorSim::continuousReadout, &myDemodulator);
+	thread t2(&RTLSDRSim::continuousReadout, &myRTLSDR);
 	char c;
 	cin >> c;
 	while (bus->isRunning());
