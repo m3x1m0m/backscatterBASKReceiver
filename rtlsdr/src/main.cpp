@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 
 	MessageBus *bus = new MessageBus();
 	//RTLSDR myRTLSDR(fsamp, ftuned, gain, bus);
-	DemodulatorSim myDemodulator(bus,1,40);
+	DemodulatorSim myDemodulator(bus,1,80);
 	//Demodulator *myDemodulator = new Demodulator(false,threshold, bus);
 	EasyDecoder *myDecoder = new EasyDecoder();
 	//bus->addListener(myDemodulator);

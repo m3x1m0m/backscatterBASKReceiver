@@ -23,7 +23,7 @@ namespace listener {
 //-------------------------------------Constructor----------------------------------------------------------------------------
 EasyDecoder::EasyDecoder(void) :
 		sampleFreq(0), expectedMsgSize(EXPECTED_MSG_SIZE), numOnes(0), bitCnt(0), sampCnt(0), state(NOT_IN_SYNC),
-		silence(true), samplesPerBit(0), bitThreshold(0), initialized(false), sumSamp(0){
+		silence(true), samplesPerBit(0), bitThreshold(0), initialized(false), sumSamp(0), msgRecv(0){
 	message::ManchEnSampMess msg;
 	setSensitive(Sensitive( { message::MessageTypes::get().getType(&msg) }));
 }
@@ -39,17 +39,16 @@ void EasyDecoder::receiveMessage(Message* message) {
 	uint8_t currentBit = 0;
 	unsigned int errors = 0;
 
-	if(!initialized){													// This code is executed after each message
-		samplesPerBit = msg->getSampleRate() / BAUDRATE;
-		bitThreshold = (samplesPerBit*MY_BIT_THRESHOLD);
-		std::cout << "Decoder: bitThreshold-" << bitThreshold << " samplesPerBit-" << samplesPerBit << std::endl;
-		recvData.clear();												// Empty message vector
-		sumSamp = 0;
-		errors = 0;
-		initialized = true;
-	}
-
 	while (msg->hasSample()) {
+		if(!initialized){												// This code is executed after each message
+			samplesPerBit = msg->getSampleRate() / BAUDRATE;
+			bitThreshold = (samplesPerBit*MY_BIT_THRESHOLD);
+			std::cout << "Decoder: bitThreshold-" << bitThreshold << " samplesPerBit-" << samplesPerBit << std::endl;
+			recvData.clear();											// Empty message vector
+			sumSamp = 0;
+			errors = 0;
+			initialized = true;
+		}
 		currentBit = msg->nextSample();									// get a single sample
 		sumSamp++;
 		switch (state) {
@@ -104,14 +103,15 @@ void EasyDecoder::receiveMessage(Message* message) {
 				sampCnt = 0;
 			}
 			if(recvData.size() >= expectedMsgSize){
-				state = NOT_IN_SYNC;									// One message has been sent
+				state = IDLE;											// One message has been sent
+				msgRecv++;
+				printData();
 				errors = blingOracle();
 				std::cout << "Decoder: BER is " << ((float)errors/(float)EXPECTED_MSG_SIZE)*100.0 << "%" << std::endl ;
-				std::cout << "Decoder: MESSAGE->NOT_IN_SYNC, sumSamp-" << sumSamp << std::endl ;
+				std::cout << "Decoder: MESSAGE->IDLE, sumSamp-" << sumSamp << std::endl ;
+				std::cout << "Decoder: Message received-" << msgRecv << std::endl ;
 				initialized = false;									// Calculate sampPerBit etc. again
-				printData();
 			}
-
 			break;
 		}
 	}
@@ -120,7 +120,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 //-------------------------------------printMessage---------------------------------------------------------------------------
 void EasyDecoder::printData(void) {
 	std::cout << "Decoder: Received data-";
-	for(int i=0; i<recvData.size(); i++)
+	for(unsigned int i=0; i<recvData.size(); i++)
 		std::cout << recvData[i];
 	std::cout << std::endl;
 }

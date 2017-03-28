@@ -56,6 +56,7 @@ private:
 	bool silence;
 	bool initialized;
 	unsigned int sumSamp;
+	unsigned int msgRecv;
 };
 
 } /* namespace listener */

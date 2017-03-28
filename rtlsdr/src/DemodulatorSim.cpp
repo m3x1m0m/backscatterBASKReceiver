@@ -30,15 +30,17 @@ DemodulatorSim::DemodulatorSim(MessageBus* iBus, unsigned int inumMsg, unsigned 
 	// Action
 	initializeBuffer();
 	std::cout << "DemodulatorSim: Buffer length-" << BUFFER_LENGTH << std::endl;
-	if( (iIndex <=100) && (iIndex >=0) )
-		bufIndex = (iIndex/100)*BUFFER_LENGTH;
+	if( (iIndex <=100) && (iIndex >=0) ){
+		bufIndex = round((iIndex/100.0)*(float)BUFFER_LENGTH);
+		std::cout << "DemodulatorSim: Buffer index-" << bufIndex << std::endl;
+	}
 	else{
 		std::cout << "DemodulatorSim: Spasti!" << std::endl;
 		bufIndex = 0;
 	}
 }
 
-//-------------------------------------initializeBuffer-----------------------------------------------------------------------
+//-------------------------------------initializeBuffer-------std::cout << "DemodulatorSim: Spasti!" << std::endl;----------------------------------------------------------------
 void DemodulatorSim::initializeBuffer(){
 	//Variables
 	bool what = true;
