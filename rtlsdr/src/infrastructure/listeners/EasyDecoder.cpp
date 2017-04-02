@@ -103,7 +103,7 @@ void EasyDecoder::receiveMessage(Message* message) {
 			}
 			if(bitCnt == PREAMBLE_LENGTH){								// Preamble has been detected
 				state = MESSAGE;										// Message follow now
-				std::cout << "Decoder: MESSAGE->IDLE, sumSamp-" << sumSamp << std::endl;
+				std::cout << "Decoder: IDLE->MESSAGE, sumSamp-" << sumSamp << std::endl;
 				for(unsigned int i = 0; i < PREAMBLE_LENGTH; i++)		// Add preamble to data
 					recvData.push_back(!(i%2));
 				bitCnt = 0;

@@ -25,8 +25,8 @@ namespace listener{
 #define MY_RAW_FILE (char*)"raw.csv"
 #define MY_FILTERED_FILE (char*)"filtered.csv"
 #define MY_BINARY_FILE (char*)"binary.csv"
-#define MY_COEFFICIENTS_FILE1 (char*)"../filters/low_filter_250e3_10e3.csv"
-#define MY_COEFFICIENTS_FILE2 (char*)"../filters/low_filter_25e3_0.5e3.csv"
+#define MY_COEFFICIENTS_FILE1 (char*)"../filters/low_filter_250e3_10e3_60.csv"
+#define MY_COEFFICIENTS_FILE2 (char*)"../filters/low_filter_25e3_3e3_90.csv"
 #define MY_DECIMATION_FACTOR 10						// Factor for downsampling
 #define MY_KP 0.8									// Threshold orientated at the maximum signal value
 #define MY_SETPOINT 50								// Setpoint for AGC

@@ -25,7 +25,7 @@
 #define MY_BIT_THRESHOLD 0.4
 #define NUMBER_OF_FRAMES 10
 #define ONES_EXPECTED 256
-#define PREAMBLE_LENGTH 4								// Preamble must always look like 10101010...
+#define PREAMBLE_LENGTH 8								// Preamble must always look like 10101010...
 
 //-------------------------------------Namespaces------------------------------------------------------------------------------
 namespace backscatter {

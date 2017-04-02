@@ -36,8 +36,8 @@ Demodulator::Demodulator(bool idebug, float ithreshold, MessageBus* ibus):Listen
 	initializeFIR(MY_COEFFICIENTS_FILE1, &coefficientsFilt1, &numTaps1);					// First filter before downsampling
 	initializeFIR(MY_COEFFICIENTS_FILE2, &coefficientsFilt2,  &numTaps2);					// Second filter after downsampling
 
-	std::cout << "First filter has " << numTaps1 << " taps." << std::endl;
-	std::cout << "Second filter has " << numTaps2 << " taps." << std::endl;
+	std::cout << "Demodulator: First filter has " << numTaps1 << " taps." << std::endl;
+	std::cout << "Demodulator: Second filter has " << numTaps2 << " taps." << std::endl;
 
 	rawFile.open(MY_RAW_FILE, std::ios::out);												// Open files for logging
 	filteredFile.open(MY_FILTERED_FILE, std::ios::out);
@@ -45,7 +45,7 @@ Demodulator::Demodulator(bool idebug, float ithreshold, MessageBus* ibus):Listen
 
 	debug = idebug;
 	threshold = ithreshold;
-	std::cout << "Threshold: " << threshold << std::endl;
+	std::cout << "Demodulator: Threshold: " << threshold << std::endl;
 	msgBus = ibus;
 }
 
@@ -107,7 +107,7 @@ void Demodulator::receiveMessage(message::Message* message) {
 		msgBus->pushMessage(msg_2send);
 		std::cout << "Demodulator: Pushed samples to bus." << std::endl;
 	} else{																					// Check if FIR is implemented correctly
-			std::cout << "Currently no implementation available :'(" << std::endl;
+			std::cout << "Demodulator: Currently no implementation available :'(" << std::endl;
 	}
 	delete[] fastBuffer;
 	delete[] slowBuffer;

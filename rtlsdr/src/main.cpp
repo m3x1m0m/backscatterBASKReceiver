@@ -14,6 +14,7 @@
 #include "./infrastructure/listeners/Demodulator.h"
 #include "infrastructure/listeners/EasyDecoder.h"
 #include "RTLSDRSim.h"
+#include "RTLSDR.h"
 
 using namespace std;
 using namespace backscatter;
@@ -37,15 +38,15 @@ int main(int argc, char* argv[]) {
 	threshold = (unsigned int)atof(argv[4]);
 
 	MessageBus *bus = new MessageBus();
-	//RTLSDR myRTLSDR(fsamp, ftuned, gain, bus);
-	RTLSDRSim myRTLSDR(bus, fsamp, false, 10);
+	RTLSDR myRTLSDR(fsamp, ftuned, gain, bus);
+	//RTLSDRSim myRTLSDR(bus, fsamp, false, 10);
 	//DemodulatorSim myDemodulator(bus,1,80);
-	Demodulator *myDemodulator = new Demodulator(false,threshold, bus);
+	Demodulator *myDemodulator = new Demodulator(false, threshold, bus);
 	EasyDecoder *myDecoder = new EasyDecoder();
 	bus->addListener(myDemodulator);
 	bus->addListener(myDecoder);
 	thread t1(&MessageBus::runLoop, bus);
-	thread t2(&RTLSDRSim::continuousReadout, &myRTLSDR);
+	thread t2(&RTLSDR::continuousReadout, &myRTLSDR);
 	char c;
 	cin >> c;
 	while (bus->isRunning());

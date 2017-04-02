@@ -16,6 +16,7 @@
 		fileFiltered = 'filtered.csv'	
 		fileBinary = 'binary.csv'	
 		n = 1;					% Additional decimation if necessary		
+		slowMode = true;	
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Readout and plot
@@ -91,5 +92,9 @@
 			axis(osciBin,[0 refresh_rate*1e3 0 1.1]);
 			offset = offset + 1;
 			sum=sum+length(P2);
-			pause(refresh_rate);			
+			if (slowMode)
+				w = waitforbuttonpress;
+			else
+				pause(refresh_rate);			
+			end
 		end

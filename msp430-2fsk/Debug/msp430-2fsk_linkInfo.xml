@@ -2,7 +2,7 @@
 <link_info>
    <banner>MSP430 Linker Unix v16.9.1.LTS</banner>
    <copyright>Copyright (c) 2003-2015 Texas Instruments Incorporated</copyright>
-   <link_time>0x58d6791d</link_time>
+   <link_time>0x58e0d2b6</link_time>
    <link_errors>0x0</link_errors>
    <output_file>msp430-2fsk.out</output_file>
    <entry_point>
