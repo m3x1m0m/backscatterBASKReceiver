@@ -1,0 +1,11 @@
+raw = dlmread('raw.csv');
+raw = raw(1e3:25e3);
+fig = figure(23);
+plot(raw);
+grid on;
+title('Idle and Frame Transmission');
+xlabel('Sample');
+ylabel('8 Bit A/D Value');
+axis([0 24e3 -35 35]);
+set(gca,'XTick',[0:5000:25e3]);
+set(gca,'YTick',[-30:10:30]);
