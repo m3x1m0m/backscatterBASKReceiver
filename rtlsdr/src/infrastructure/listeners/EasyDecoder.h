@@ -20,12 +20,12 @@
 #include "../messages/ManchEnSampMess.h"
 
 //-------------------------------------Defines---------------------------------------------------------------------------------
-#define BAUDRATE 1000
+#define BAUDRATE 100
 #define EXPECTED_MSG_SIZE 512
 #define MY_BIT_THRESHOLD 0.4
 #define NUMBER_OF_FRAMES 10
 #define ONES_EXPECTED 256
-#define PREAMBLE_LENGTH 8								// Preamble must always look like 10101010...
+#define PREAMBLE_LENGTH 4								// Preamble must always look like 10101010...
 
 //-------------------------------------Namespaces------------------------------------------------------------------------------
 namespace backscatter {

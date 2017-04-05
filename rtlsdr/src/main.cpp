@@ -13,6 +13,7 @@
 
 #include "./infrastructure/listeners/Demodulator.h"
 #include "infrastructure/listeners/EasyDecoder.h"
+#include "infrastructure/listeners/StupidDecoder.h"
 #include "RTLSDRSim.h"
 #include "RTLSDR.h"
 
